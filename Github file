@@ -1,0 +1,3272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Halo Reading Trainer 2.0</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23050b14'/%3E%3Ccircle cx='50' cy='50' r='34' fill='none' stroke='%2338bdf8' stroke-width='6'/%3E%3Ccircle cx='50' cy='50' r='18' fill='%2310b981'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23050b14'/%3E%3Ccircle cx='50' cy='50' r='34' fill='none' stroke='%2338bdf8' stroke-width='6'/%3E%3Ccircle cx='50' cy='50' r='18' fill='%2310b981'/%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Halo%20Reading%20Trainer%202.0%22%2C%22short_name%22%3A%22Reading%20Trainer%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23050b14%22%2C%22theme_color%22%3A%22%2338bdf8%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%2520viewBox%3D%270%200%20100%20100%27%253E%253Crect%2520width%3D%27100%27%2520height%3D%27100%27%2520rx%3D%2720%27%2520fill%3D%27%2523050b14%27%2F%253E%253Ccircle%2520cx%3D%2750%27%2520cy%3D%2750%27%2520r%3D%2734%27%2520fill%3D%27none%27%2520stroke%3D%27%252338bdf8%27%2520stroke-width%3D%276%27%2F%253E%253Ccircle%2520cx%3D%2750%27%2520cy%3D%2750%27%2520r%3D%2718%27%2520fill%3D%27%252310b981%27%2F%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+<meta name="theme-color" content="#050b14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Reading Trainer">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@v5/dist/tesseract.min.js"></script>
+<style>
+:root{--primary:#38bdf8;--green:#10b981;--danger:#ef4444;--gold:#facc15;--text:#f8fafc;--muted:#94a3b8;--bg:#050b14;--card:rgba(15,23,42,.88);--border:rgba(56,189,248,.32)}
+*{box-sizing:border-box}
+body{margin:0;padding:18px;font-family:system-ui,Arial,sans-serif;background:var(--bg);background-image:radial-gradient(circle at 50% -20%,#17365c 0,transparent 42%),linear-gradient(rgba(56,189,248,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.055) 1px,transparent 1px);background-size:100% 100%,30px 30px,30px 30px;color:var(--text);min-height:100vh}
+.view{max-width:560px;margin:auto;padding-bottom:38px}
+.hidden{display:none!important}
+h1{text-align:center;color:var(--primary);font-size:30px;margin:8px 0 0;font-weight:1000;letter-spacing:1px;text-shadow:0 0 15px rgba(56,189,248,.55)}
+.subtitle{text-align:center;color:var(--green);font-size:13px;font-weight:900;letter-spacing:3px;margin:6px 0 22px;text-transform:uppercase}
+.section{font-size:12px;color:var(--muted);text-transform:uppercase;font-weight:900;letter-spacing:1.7px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:26px 0 11px}
+.card,.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:inset 0 0 20px rgba(56,189,248,.05);backdrop-filter:blur(6px)}
+.card{padding:18px;margin:0 0 13px;display:flex;gap:16px;align-items:center;cursor:pointer}
+.card:hover{border-color:var(--primary);box-shadow:0 0 18px rgba(56,189,248,.16)}
+.icon{min-width:54px;height:54px;border:1px solid var(--border);border-radius:12px;background:rgba(2,6,23,.65);display:flex;align-items:center;justify-content:center;font-size:27px}
+.card h3{margin:0 0 4px;color:var(--primary);font-size:17px}
+.card p{margin:0;color:var(--muted);font-size:14px;line-height:1.35}
+.panel{padding:17px;margin-bottom:16px}
+.rank{position:relative;display:flex;align-items:center;gap:17px;padding:18px;margin-bottom:18px}
+.badge{width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-size:32px;border-radius:50%;position:relative;box-shadow:0 3px 10px rgba(0,0,0,.4),inset 0 3px 6px rgba(255,255,255,.35),inset 0 -6px 10px rgba(0,0,0,.35);transition:background .3s}
+.badge::after{content:'';position:absolute;top:8%;left:18%;width:32%;height:22%;border-radius:50%;background:rgba(255,255,255,.55);filter:blur(3px);pointer-events:none}
+.rank h2{margin:0;color:var(--primary);font-size:19px}
+.rank p{margin:4px 0 0;color:var(--muted);font-weight:800;font-size:12px;text-transform:uppercase}
+.tiny{font-size:12px;color:var(--muted)}
+button{width:100%;padding:14px;border-radius:10px;border:1px solid var(--primary);background:rgba(56,189,248,.16);color:var(--primary);font-size:15px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin:8px 0;cursor:pointer}
+button:hover{background:var(--primary);color:#06111f}
+.back{background:rgba(30,41,59,.8);color:var(--primary);border-color:var(--border)}
+.green{border-color:var(--green);color:var(--green);background:rgba(16,185,129,.14)}
+.green:hover{background:var(--green);color:#06111f}
+.danger{border-color:var(--danger);color:var(--danger);background:rgba(239,68,68,.13)}
+.danger:hover{background:var(--danger);color:white}
+input,textarea,select{width:100%;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(15,23,42,.9);color:var(--text);font:inherit;margin:7px 0 12px}
+textarea{min-height:150px;line-height:1.5}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:rgba(2,6,23,.45);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;transition:border-color .2s}
+.stat:has(.statOrb){display:flex;align-items:center;gap:10px;text-align:left}
+.statOrb{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;flex:0 0 auto;box-shadow:0 3px 8px rgba(0,0,0,.35),inset 0 2px 3px rgba(255,255,255,.25)}
+.statOrb.blue{background:linear-gradient(135deg,#38bdf8,#0284c7)}
+.statOrb.green{background:linear-gradient(135deg,#34d399,#059669)}
+.statOrb.gold{background:linear-gradient(135deg,#fde047,#ca8a04)}
+.statOrb.purple{background:linear-gradient(135deg,#c4b5fd,#7c3aed)}
+.stat b{display:block;color:var(--green);font-size:22px}
+.stat small{color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase}
+.bar{height:12px;background:#0f172a;border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-top:10px}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--primary),var(--green));box-shadow:0 0 12px var(--primary);transition:width .3s}
+.branch-card{border:1px solid var(--border);border-left:6px solid var(--primary);border-radius:13px;background:rgba(2,6,23,.45);padding:14px;margin-bottom:12px}
+.branch-card h3{margin:0 0 8px;color:var(--primary);font-size:15px}
+.readbox{font-size:18px;line-height:1.8;white-space:pre-wrap;max-height:56vh;overflow:auto}
+.readbox.bookMode{font-family:Georgia,'Times New Roman',serif;background:#f4ead8!important;color:#1f2937!important;border-color:#b45309!important}
+.migrateNote{border:1px solid rgba(250,204,21,.35);background:rgba(250,204,21,.08);border-radius:10px;color:#fde68a;padding:10px;margin:0 0 14px;font-size:13px;line-height:1.4}
+.lmwLine{padding:14px 0;font-family:Georgia,'Times New Roman',serif;font-size:1.15em;line-height:1.6;word-wrap:break-word}
+.lmwRail{display:flex;align-items:center;gap:8px;margin-top:6px}
+.lmwRail .bar{flex:1;height:3px;border-radius:999px;background:linear-gradient(90deg,#38bdf8,#10b981)}
+.lmwRail .dot{width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;flex:0 0 auto}
+.lmwRail .arrow{font-size:14px;color:#10b981;font-weight:900;flex:0 0 auto}
+.lmwControls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.lmwControls button{margin:0}
+label.tiny{display:block;margin:10px 0 0}
+@keyframes achieveIn{0%{transform:translate(-50%,-30px) scale(.85);opacity:0}60%{transform:translate(-50%,4px) scale(1.04);opacity:1}100%{transform:translate(-50%,0) scale(1);opacity:1}}
+@keyframes achieveOut{0%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-20px);opacity:0}}
+.achieveToast{position:fixed;top:16px;left:50%;z-index:9999;background:linear-gradient(135deg,var(--gold),var(--green));color:#050b14;font-weight:900;padding:14px 20px;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.5);display:flex;align-items:center;gap:12px;animation:achieveIn .5s ease-out;max-width:88vw}
+.achieveToast.out{animation:achieveOut .4s ease-in forwards}
+.libTab{flex:1;padding:9px 4px;border-radius:10px;border:1px solid var(--border);background:rgba(2,6,23,.5);color:var(--muted);font-size:12px;font-weight:800;margin:0}
+.libTab.active{background:linear-gradient(135deg,var(--primary),var(--green));color:#050b14;border-color:transparent}
+.bookRow{display:flex;gap:0;border-radius:14px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px;background:var(--card)}
+.bookRow.active{border-color:var(--green);box-shadow:0 0 0 1px var(--green)}
+.bookSpine{width:34px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.92);font-weight:900;font-size:12px;letter-spacing:1px;writing-mode:vertical-rl;text-orientation:mixed;padding:10px 0;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+.bookBody{flex:1;padding:12px 14px;min-width:0}
+.iconGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.iconTile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 4px;border-radius:16px;background:var(--card);border:1px solid var(--border);cursor:pointer;text-align:center;position:relative}
+.iconTile .ic{width:48px;height:48px;border-radius:50%;background:rgba(2,6,23,.5);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:23px}
+.iconTile .lb{font-size:11.5px;font-weight:800;color:var(--text);line-height:1.25}
+.iconTile.locked{opacity:.42}
+.iconTile.locked::after{content:'🔒';position:absolute;top:6px;right:8px;font-size:12px}
+.scanPageCard{border:1px solid var(--border);border-left:6px solid var(--primary);border-radius:13px;background:rgba(2,6,23,.45);padding:12px;margin-bottom:12px}
+.scanPageCard h4{margin:0 0 8px;color:var(--primary);font-size:14px}
+.scanPageCard textarea{min-height:100px}
+.scanPageBtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.scanPageBtns button{margin:0;font-size:12px;padding:10px}
+.fileInput{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.gridCell{aspect-ratio:1;background:rgba(30,41,59,.85);border:1px solid var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--primary);font-weight:1000;font-size:22px;cursor:pointer}
+.gridCell.gone{visibility:hidden}
+.gridCell.wrong{animation:gridShake .2s}
+@keyframes gridShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.flashcard{min-height:150px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:22px;font-weight:900;color:var(--primary);border:1px dashed var(--primary);border-radius:14px;padding:18px;margin-bottom:10px;background:rgba(2,6,23,.5);cursor:pointer}
+.rankGrid{display:grid;grid-template-columns:repeat(10,minmax(26px,1fr));gap:clamp(4px,1.2vw,9px);padding:clamp(8px,2vw,16px);border-radius:18px;background:#000002;border:1px solid rgba(56,189,248,.24);box-shadow:inset 0 0 28px rgba(56,189,248,.08),0 0 22px rgba(0,0,0,.5);overflow:hidden}
+.rankTile{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;position:relative;box-sizing:border-box;background:#050814;border:1px solid #10203f;box-shadow:0 0 0 1px rgba(0,0,0,.7),inset 0 0 10px rgba(56,189,248,.08);overflow:hidden;min-width:0}
+.rankTile::after{content:'';position:absolute;inset:2px;border:1px solid rgba(98,146,255,.22);border-radius:4px;pointer-events:none}
+.rankRing{width:72%;height:72%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:1000;font-size:clamp(11px,3.8vw,26px);color:#d7d7d7;background:#08111f;position:relative;z-index:2;text-shadow:1px 2px 2px #000,-1px -1px 0 #111;box-shadow:0 0 10px currentColor,inset 0 0 10px rgba(0,0,0,.9);line-height:1}
+.rankRing::before{content:'';position:absolute;inset:7%;border-radius:50%;border:2px solid rgba(5,12,26,.95);box-shadow:inset 0 0 10px rgba(0,0,0,.95);pointer-events:none}
+.rankNum{position:relative;z-index:3}
+.rankTile.tier1{background:radial-gradient(circle,#102d73 0%,#080b1c 72%)}
+.rankTile.tier1 .rankRing{color:#4f8cff;border:2px solid #2f7bff;background:#07101f}
+.rankTile.tier2{background:linear-gradient(135deg,#121a3f 0%,#1b1745 55%,#d77728 100%)}
+.rankTile.tier2 .rankRing{color:#536dff;border:2px solid #3f7dff}
+.rankTile.tier3{background:linear-gradient(135deg,#2a1234 0%,#6e1d70 48%,#ff3e63 100%)}
+.rankTile.tier3 .rankRing{color:#ff55ce;border:2px solid #ff4ec8}
+.rankTile.tier4{background:linear-gradient(135deg,#1dd07e 0%,#1b244d 45%,#ff46d0 100%)}
+.rankTile.tier4 .rankRing{color:#ff55d7;border:2px solid #ff4ed2}
+.rankTile.tier5{background:linear-gradient(135deg,#ff6868 0%,#6b1418 70%,#1b0710 100%)}
+.rankTile.tier5 .rankRing{color:#ff5d5d;border:2px solid #181e32}
+.rankTile.tier6{background:radial-gradient(circle at 50% 20%,#16243f 0%,#03050b 78%);border-color:#1d3769}
+.rankTile.tier6 .rankRing{display:none}
+.rankTile.locked{opacity:.42;filter:saturate(.55) brightness(.7)}
+.rankTile.current{outline:2px solid #f8fafc;box-shadow:0 0 18px rgba(255,255,255,.65),0 0 22px var(--primary);transform:scale(1.04);z-index:5;opacity:1;filter:none}
+.celestial-art{position:absolute;width:58%;height:58%;border-radius:50%;z-index:3;left:50%;top:43%;transform:translate(-50%,-50%)}
+.celestial-label{position:absolute;bottom:4%;left:0;right:0;text-align:center;font-weight:1000;font-size:clamp(10px,3vw,19px);color:#d9d9d9;text-shadow:1px 2px 2px #000;z-index:4;line-height:1}
+.celestial-art.crescent{background:#1a2030;box-shadow:-9px 4px 0 0 #b8c2cf;transform:translate(-42%,-50%) rotate(-18deg)}
+.celestial-art.half-moon{background:linear-gradient(90deg,#c9d2df 0 50%,#1b2230 50%);box-shadow:0 0 8px rgba(220,230,245,.45)}
+.celestial-art.full-moon{background:radial-gradient(circle at 35% 30%,#f1f5f9 0%,#95a0ad 55%,#3a4250 100%);box-shadow:0 0 10px rgba(220,230,245,.55)}
+.celestial-art.eclipse{background:#020205;border:2px solid #e7a231;box-shadow:0 0 12px #f59e0b,0 0 22px rgba(245,158,11,.5)}
+.celestial-art.sun{background:radial-gradient(circle,#fff7b2 0%,#facc15 45%,#f59e0b 100%);box-shadow:0 0 14px #facc15,0 0 24px #f97316}
+.celestial-art.comet{width:70%;height:34%;border-radius:50% 0 0 50%;background:linear-gradient(90deg,#f8fafc 0%,#60a5fa 35%,rgba(37,99,235,0) 100%);box-shadow:0 0 16px #60a5fa;transform:translate(-50%,-55%) rotate(-35deg)}
+.celestial-art.nova{background:radial-gradient(circle at 35% 30%,#9db4d8,#41506c 75%);box-shadow:0 0 12px rgba(147,197,253,.6)}
+.celestial-art.nova::after{content:'';position:absolute;top:50%;left:50%;width:145%;height:32%;border:2px solid #cbd5e1;border-radius:50%;transform:translate(-50%,-50%) rotate(-25deg)}
+
+
+/* === Halo 2 polished rank system update === */
+#service.view{max-width:720px;padding-left:12px;padding-right:12px}
+#service .panel{padding:clamp(16px,3.8vw,28px);border-radius:24px;border-color:rgba(56,189,248,.38);background:linear-gradient(180deg,rgba(8,18,34,.92),rgba(2,6,16,.88));box-shadow:inset 0 0 32px rgba(56,189,248,.08),0 0 28px rgba(0,0,0,.55)}
+#service .panel .tiny{font-size:clamp(14px,3.8vw,18px);line-height:1.45;margin-bottom:18px}
+.rankGrid{grid-template-columns:repeat(10,1fr)!important;gap:clamp(5px,1.35vw,10px)!important;padding:clamp(8px,2vw,14px)!important;width:100%;max-width:100%;overflow:visible!important;border-radius:18px;background:linear-gradient(180deg,#01040b,#000002);border:1px solid rgba(56,189,248,.32);box-shadow:inset 0 0 30px rgba(56,189,248,.10),0 0 24px rgba(0,0,0,.7)}
+.rankTile{min-width:0;border-radius:8px!important;box-shadow:0 0 0 1px rgba(0,0,0,.85),inset 0 0 12px rgba(56,189,248,.08),0 5px 12px rgba(0,0,0,.45)!important}
+.rankTile::before{content:'';position:absolute;inset:3px;border-radius:6px;background:linear-gradient(135deg,rgba(255,255,255,.12),transparent 28%,transparent 72%,rgba(255,255,255,.08));z-index:1;pointer-events:none}
+.rankTile::after{inset:2px!important;border-color:rgba(125,180,255,.34)!important}
+.rankRing{width:74%!important;height:74%!important;font-size:clamp(13px,4.2vw,27px)!important;color:#e7e5df!important;font-family:Impact,'Arial Black',system-ui,sans-serif;text-shadow:2px 2px 0 #05070a,-1px -1px 0 #5b6170,0 0 8px rgba(255,255,255,.25)!important;background:radial-gradient(circle at 50% 45%,#111827 0,#050912 68%,#010208 100%)!important}
+.rankTile.tier1 .rankRing{border-color:#1682ff!important;box-shadow:0 0 10px #1d6fff,inset 0 0 12px rgba(0,0,0,.95)!important}
+.rankTile.tier2 .rankRing{border-color:#427cff!important;box-shadow:0 0 10px #366dff,inset 0 0 12px rgba(0,0,0,.95)!important}
+.rankTile.tier3 .rankRing{border-color:#ff4fc8!important;box-shadow:0 0 11px #ff42c8,inset 0 0 12px rgba(0,0,0,.95)!important}
+.rankTile.tier4 .rankRing{border-color:#ef4fd9!important;box-shadow:0 0 11px #dc3fd4,inset 0 0 12px rgba(0,0,0,.95)!important}
+.rankTile.tier5 .rankRing{border-color:#151b27!important;box-shadow:0 0 10px #ef4444,inset 0 0 12px rgba(0,0,0,.95)!important}
+.rankTile.current{outline:3px solid #f8fafc!important;box-shadow:0 0 18px rgba(255,255,255,.85),0 0 28px var(--primary),inset 0 0 12px rgba(255,255,255,.12)!important;transform:scale(1.08);z-index:10;opacity:1!important;filter:none!important}
+.rankTile.locked{opacity:.34;filter:saturate(.55) brightness(.58)}
+.rankTile.current.locked{opacity:1;filter:none}
+.rankTile.tier6{background:radial-gradient(circle at 50% 16%,#13294e 0%,#040812 76%)!important;border-color:#254a81!important}
+.rankTile.tier6 .rankRing,.rankTile.tier6 .celestial-label{display:none!important}
+.celestial-art{width:72%!important;height:72%!important;top:50%!important;filter:drop-shadow(0 0 8px rgba(170,210,255,.45));}
+.celestial-art.crescent{background:transparent!important;box-shadow:-11px 5px 0 0 #d8dee8, -15px 6px 12px rgba(230,240,255,.35)!important;transform:translate(-42%,-50%) rotate(-18deg)!important}
+.celestial-art.half-moon{background:linear-gradient(90deg,#eef2f7 0 49%,#151b25 50% 100%)!important;box-shadow:0 0 10px rgba(230,240,255,.65),inset -8px 0 12px rgba(0,0,0,.45)!important}
+.celestial-art.full-moon{background:radial-gradient(circle at 35% 30%,#fff 0%,#d8dee8 28%,#8c98a8 62%,#404a58 100%)!important;box-shadow:0 0 14px rgba(230,240,255,.75)!important}
+.celestial-art.full-moon::before{content:'';position:absolute;inset:16% 22% 20% 18%;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(69,78,92,.35) 0 12%,transparent 13%),radial-gradient(circle at 70% 45%,rgba(69,78,92,.28) 0 9%,transparent 10%),radial-gradient(circle at 50% 75%,rgba(69,78,92,.26) 0 10%,transparent 11%)}
+.celestial-art.eclipse{background:#020205!important;border:2px solid #f6b347!important;box-shadow:0 0 13px #f59e0b,0 0 28px rgba(245,158,11,.72)!important}
+.celestial-art.sun{background:radial-gradient(circle,#fffbd1 0%,#fde047 38%,#f59e0b 76%,#b45309 100%)!important;box-shadow:0 0 18px #facc15,0 0 34px #f97316!important}
+.celestial-art.sun::before{content:'';position:absolute;inset:-20%;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(250,204,21,.95) 0 6deg,transparent 6deg 15deg);z-index:-1;filter:blur(.2px)}
+.celestial-art.comet{width:82%!important;height:38%!important;border-radius:50% 0 0 50%!important;background:radial-gradient(circle at 12% 50%,#fff 0 10%,#bfdbfe 11% 19%,transparent 20%),linear-gradient(90deg,#f8fafc 0%,#93c5fd 22%,#38bdf8 48%,rgba(37,99,235,0) 100%)!important;box-shadow:0 0 18px #60a5fa!important;transform:translate(-50%,-50%) rotate(-35deg)!important}
+.celestial-art.nova{background:radial-gradient(circle at 35% 30%,#dbeafe 0%,#7891bd 38%,#2f3d58 78%)!important;box-shadow:0 0 15px rgba(147,197,253,.75)!important}
+.celestial-art.nova::after{border-color:#dbeafe!important;box-shadow:0 0 8px rgba(219,234,254,.75)}
+#badge.haloRankBadge{width:76px;height:76px;min-width:76px;padding:0;background:transparent!important;border-radius:0!important;box-shadow:none!important;overflow:visible}
+#badge.haloRankBadge::after{display:none!important}
+#badge.haloRankBadge .rankTile{width:76px;height:76px;transform:none!important;opacity:1;filter:none}
+#badge.haloRankBadge .rankTile.current{transform:none!important}
+@media (max-width:420px){
+  #service.view{padding-left:8px;padding-right:8px}
+  #service .panel{padding:16px 8px}
+  .rankGrid{gap:4px!important;padding:7px!important}
+  .rankRing{font-size:clamp(12px,4.5vw,19px)!important}
+  #badge.haloRankBadge{width:72px;height:72px;min-width:72px}
+  #badge.haloRankBadge .rankTile{width:72px;height:72px}
+}
+
+</style>
+</head>
+<body>
+
+<div id="menu" class="view">
+  <h1>TRAINING HUB</h1>
+  <div class="subtitle">HALO SCRIPTURE PROGRAM 2.0</div>
+  <div id="migrateNote" class="migrateNote hidden"></div>
+  <div id="activeChapterBanner" class="tiny" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:0 0 14px;text-align:center"></div>
+  <div id="chapterHeatMap" style="margin:0 0 14px"></div>
+  <div id="notesSection" style="margin:0 0 14px"></div>
+  <div id="themePicker" style="display:flex;gap:8px;justify-content:center;margin:0 0 16px"></div>
+  <div class="card rank" style="cursor:default">
+    <div class="badge" id="badge">🔵</div>
+    <div>
+      <h2 id="rankName">Recruit 1</h2>
+      <p id="prestigeLine" class="tiny hidden" style="color:var(--gold);margin:0 0 4px"></p>
+      <p>Total XP <span id="xp">0</span> / <span id="nextXp">200</span></p>
+      <div class="bar"><div class="fill" id="rankFill"></div></div>
+      <button type="button" id="prestigeBtn" class="hidden" style="margin-top:8px" onclick="prestigeReset()">⭐ Restart at Level 1 (Prestige)</button>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="stat"><span class="statOrb green">🔥</span><span><b id="streak">0</b><small>Day Streak</small></span></div>
+    <div class="stat"><span class="statOrb purple">⚡</span><span><b id="bestWpm">0</b><small>Best WPM</small></span></div>
+    <div class="stat"><span class="statOrb blue">📖</span><span><b id="wordsRead">0</b><small>Words Read</small></span></div>
+    <div class="stat"><span class="statOrb gold">🧠</span><span><b id="quizBest">0%</b><small>Quiz Best</small></span></div>
+  </div>
+  <div class="section">Tools</div>
+  <div class="iconGrid">
+    <div class="iconTile" onclick="openView('scan')"><div class="ic">📷</div><div class="lb">Book Scanner</div></div>
+    <div class="iconTile" onclick="openView('study')"><div class="ic">🧠</div><div class="lb">Study Guide</div></div>
+    <div class="iconTile" onclick="openView('flash')"><div class="ic">🃏</div><div class="lb">Flashcards</div></div>
+    <div class="iconTile" onclick="openView('library')"><div class="ic">📚</div><div class="lb">Library</div></div>
+    <div class="iconTile" onclick="openView('verses')"><div class="ic">✝️</div><div class="lb">Verse Vault</div></div>
+  </div>
+  <div class="section">Training Modes</div>
+  <div class="tiny" style="margin:-4px 0 10px">Locked (🔒) modes need an 80%+ quiz pass on the one before them. <span style="color:var(--danger);text-decoration:underline;cursor:pointer" onclick="resetTrainingProgress()">Reset training progress</span></div>
+  <div class="iconGrid">
+    <div class="iconTile" onclick="openView('grid')" id="cardGrid" title="Warm-up. Always unlocked."><div class="ic">🔢</div><div class="lb">Peripheral Grid</div></div>
+    <div class="iconTile" onclick="openView('memory')" title="Bonus warm-up. Always unlocked."><div class="ic">🧩</div><div class="lb">Memorize Number</div></div>
+    <div class="iconTile" onclick="openView('rsvp')" id="cardRsvp" title="Locked until Peripheral Grid is passed at 80%+."><div class="ic">⚡</div><div class="lb">RSVP</div></div>
+    <div class="iconTile" onclick="openView('lawn')" id="cardLawn" title="Locked until RSVP is passed at 80%+."><div class="ic">🐍</div><div class="lb">Lawnmower</div></div>
+    <div class="iconTile" onclick="openView('read')" id="cardRead" title="Locked until Lawnmower is passed at 80%+."><div class="ic">📖</div><div class="lb">Reading Test</div></div>
+  </div>
+  <div class="section">Progress</div>
+  <div class="iconGrid">
+    <div class="iconTile" onclick="openView('missions')"><div class="ic">🎯</div><div class="lb" id="menuMissionSummary">Missions</div></div>
+    <div class="iconTile" onclick="openView('leader')"><div class="ic">🏆</div><div class="lb">Leaderboard</div></div>
+    <div class="iconTile" onclick="openView('service')"><div class="ic">🎖️</div><div class="lb">Service Record</div></div>
+    <div class="iconTile" onclick="openView('achievements')"><div class="ic">🏅</div><div class="lb">Achievements</div></div>
+  </div>
+</div>
+
+<div id="read" class="view hidden">
+  <button class="back" onclick="Reader.stop('read');home()">← Back to HUD</button>
+  <h1>READING TEST</h1>
+  <div class="subtitle">STANDARD MODE</div>
+  <div class="panel">
+    <textarea id="readText" placeholder="Paste reading text..."></textarea>
+    <button type="button" onclick="Reader.loadActive('read')">Load Active Chapter</button>
+    <div id="pagePickerWrapRead" class="hidden" style="margin-top:8px">
+      <label class="tiny">Or load just one page:</label>
+      <select id="pagePickerRead" onchange="loadSpecificPage('read',this.value)"><option value="whole">Whole Chapter</option></select>
+    </div>
+    <label class="tiny" style="display:flex;align-items:center;gap:8px;margin-top:8px">
+      <input type="checkbox" id="guidedModeToggle" style="width:auto;margin:0" checked>
+      📖 Guided Reading — highlight one line at a time, dim the rest
+    </label>
+    <button class="green" onclick="Reader.start('read')">Start Timer</button>
+    <div class="grid2">
+      <div id="readTimer" class="stat hidden"><b id="readTime">0.0s</b><small>Reading Time</small></div>
+      <div id="readWpmLive" class="stat hidden"><b id="readLiveWpm">0</b><small>Live WPM</small></div>
+    </div>
+    <div id="reading" class="panel readbox hidden"></div>
+    <div id="guidedNav" class="grid2 hidden" style="margin-top:8px">
+      <button type="button" onclick="Reader.guidedStep(-1)">← Previous Line</button>
+      <button type="button" onclick="Reader.guidedStep(1)">Next Line →</button>
+    </div>
+    <button id="pauseReadBtn" class="hidden" onclick="Reader.pause('read')">Pause</button>
+    <button id="finishReadBtn" class="danger hidden" onclick="Reader.finish('read')">Finished Reading / Take Quiz</button>
+  </div>
+  <div id="quizRead" class="panel hidden"></div>
+</div>
+
+<div id="lawn" class="view hidden">
+  <button class="back" onclick="Reader.stop('lawn');home()">← Back to HUD</button>
+  <h1>LAWNMOWER READING</h1>
+  <div class="subtitle">ALTERNATING DIRECTION • ONE CONTINUOUS PAGE</div>
+  <div class="panel">
+    <textarea id="lawnText" placeholder="Paste reading text..."></textarea>
+    <button type="button" onclick="Reader.loadActive('lawn')">Load Active Chapter</button>
+    <div id="pagePickerWrapLawn" class="hidden" style="margin-top:8px">
+      <label class="tiny">Or load just one page:</label>
+      <select id="pagePickerLawn" onchange="loadSpecificPage('lawn',this.value)"><option value="whole">Whole Chapter</option></select>
+    </div>
+    <label class="tiny">Words per chunk: <b id="lawnSizeLabel">7</b></label>
+    <input id="lawnSize" type="range" min="4" max="12" value="7" step="1" oninput="lawnSizeLabel.textContent=this.value">
+    <button class="green" onclick="Reader.start('lawn')">Start Lawnmower</button>
+    <div class="grid2">
+      <div id="lawnTimer" class="stat hidden"><b id="lawnTime">0.0s</b><small>Reading Time</small></div>
+      <div id="lawnWpmLive" class="stat hidden"><b id="lawnLiveWpm">0</b><small>Live WPM</small></div>
+    </div>
+    <div id="lawnReading" class="panel readbox hidden"></div>
+    <button id="pauseLawnBtn" class="hidden" onclick="Reader.pause('lawn')">Pause</button>
+    <button id="finishLawnBtn" class="danger hidden" onclick="Reader.finish('lawn')">Finished Reading / Take Quiz</button>
+  </div>
+  <div id="quizLawn" class="panel hidden"></div>
+</div>
+
+<div id="scan" class="view hidden">
+  <button class="back" onclick="home()">← Back to HUD</button>
+  <h1>BOOK PAGE SCANNER</h1>
+  <div class="subtitle">CAMERA → TEXT → ACTIVE CHAPTER</div>
+  <div class="panel" style="border-color:var(--primary)">
+    <label class="tiny" style="color:var(--primary);font-weight:900">Which book is this page for?</label>
+    <select id="scanBookPicker" onchange="Scanner.selectBook(this.value)" style="margin-top:6px">
+      <option value="__new__">+ Start a New Book</option>
+    </select>
+    <button type="button" id="deleteBookBtn" class="danger hidden" onclick="Scanner.deleteBook()" style="margin-top:8px">🗑️ Delete This Book (all its pages, permanently)</button>
+    <p class="tiny" style="margin-top:6px;color:var(--muted)">Picking an existing book loads its pages so far, so the next page you add continues it correctly instead of starting over.</p>
+  </div>
+  <div class="panel">
+    <div class="tiny" style="border:1px solid rgba(250,204,21,.32);background:rgba(250,204,21,.08);border-radius:10px;padding:10px;color:#fde68a;margin:0 0 12px">
+      Scan each page with whatever tool works for you, check the text below it, then save the whole chapter at once.
+    </div>
+    <label class="tiny">Book / Title</label><input id="scanTitle" placeholder="Example: Battlefield of the Mind">
+    <label class="tiny">Author</label><input id="scanAuthor" placeholder="e.g. Joyce Meyer (auto-fills if detected)">
+    <div class="grid2">
+      <div><label class="tiny">Chapter</label><input id="scanChapter" placeholder="e.g. Chapter 3 (auto-fills if detected)"></div>
+      <div><label class="tiny">Page / Pages</label><input id="scanPagesField" placeholder="e.g. 16-25 (auto-fills if detected)" oninput="Scanner.pagesFieldEdited()"></div>
+    </div>
+
+    <div class="section" style="margin-top:20px">Add A Page (Recommended)</div>
+    <p class="tiny">Scan with your own scanner app, copy the text, then paste it here.</p>
+    <textarea id="scanManualText" placeholder="Paste a page of text here, then press Add This Page..." style="min-height:110px"></textarea>
+    <button type="button" class="green" onclick="Scanner.addManualPage()">Add This Page</button>
+
+    <button type="button" onclick="Scanner.toggleExperimental()" id="expToggleBtn" style="margin-top:24px">Show Experimental Photo Scan (not recommended)</button>
+    <div id="expSection" class="hidden">
+      <div class="section">Scan A Photo In This App (Experimental)</div>
+      <p class="tiny">This has failed repeatedly on real photos, including ones that scanned perfectly elsewhere. Pasting text above is the only option that's actually worked. Use this only out of curiosity, not for anything you need to keep.</p>
+      <div class="grid2">
+        <button type="button" onclick="document.getElementById('scanCam').click()">📷 Scan Next Page</button>
+        <button type="button" onclick="document.getElementById('scanGal').click()">🖼️ Existing Photo</button>
+      </div>
+      <button type="button" onclick="Scanner.openLiveCamera()">🎥 Live Camera (built into the app)</button>
+      <input id="scanCam" class="fileInput" type="file" accept="image/*" capture="environment" onchange="Scanner.camChange(event)">
+      <input id="scanGal" class="fileInput" type="file" accept="image/*" onchange="Scanner.galChange(event)">
+      <div style="height:8px;border-radius:999px;background:#0f172a;border:1px solid var(--border);overflow:hidden;margin:6px 0 4px"><div id="scanBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--primary),var(--green));transition:width .15s"></div></div>
+      <p id="scanStatus" class="tiny">Choose a page photo to begin.</p>
+    </div>
+
+    <div id="scanSummary" class="tiny" style="border:1px solid var(--border);border-radius:10px;padding:10px;margin:8px 0"></div>
+    <div id="scanPages"></div>
+    <div class="grid2">
+      <button class="green" onclick="Scanner.saveActive()">Use Whole Chapter (all pages combined)</button>
+      <button class="danger" onclick="Scanner.resetAll()">Clear / New Book</button>
+    </div>
+    <button onclick="Scanner.sendTo('lawn')">Load Into Lawnmower</button>
+    <button onclick="Scanner.sendTo('read')">Load Into Reading Test</button>
+  </div>
+</div>
+
+<div id="liveCameraOverlay" class="hidden" style="position:fixed;inset:0;z-index:5000;background:#000;display:flex;flex-direction:column">
+  <video id="scanLiveVideo" autoplay playsinline muted style="flex:1;width:100%;object-fit:cover;background:#000"></video>
+  <div style="padding:16px;background:rgba(2,6,23,.92);border-top:1px solid var(--border)">
+    <p class="tiny" style="text-align:center;color:#94a3b8;margin:0 0 10px">Frame the whole page, hold steady, then capture.</p>
+    <div class="grid2">
+      <button class="danger" onclick="Scanner.closeLiveCamera()">Cancel</button>
+      <button class="green" onclick="Scanner.captureLiveFrame()">📸 Capture Page</button>
+    </div>
+  </div>
+</div>
+
+<div id="study" class="view hidden">
+  <button class="back" onclick="home()">← Back to HUD</button>
+  <h1>AUTO STUDY GUIDE</h1>
+  <div class="subtitle">WHAT • WHO • WHERE • WHEN • CONTEXT</div>
+  <div class="panel">
+    <label class="tiny">Title</label><input id="studyTitle" placeholder="Untitled Reading">
+    <label class="tiny">Passage</label><textarea id="studyText" placeholder="Paste a passage, or scan one in first..."></textarea>
+    <button class="green" onclick="StudyGuide.build()">Build Study Guide</button>
+  </div>
+  <div id="guideOut" class="hidden"></div>
+</div>
+
+<div id="flash" class="view hidden">
+  <button class="back" onclick="home()">← Back to HUD</button>
+  <h1>FLASHCARDS</h1>
+  <div class="subtitle">FROM YOUR LATEST STUDY GUIDE</div>
+  <div class="panel">
+    <div id="flashMastery" class="tiny" style="text-align:center;margin-bottom:10px"></div>
+    <button type="button" id="flashFilterBtn" onclick="Flash.toggleFilter()" style="margin-bottom:10px">Review Struggling Cards Only</button>
+    <div id="flashBox"></div>
+    <div id="flashNav" class="grid2 hidden">
+      <button onclick="Flash.prev()">← Prev</button>
+      <button onclick="Flash.next()">Next →</button>
+    </div>
+    <p class="tiny" style="text-align:center" id="flashCounter"></p>
+  </div>
+</div>
+
+<div id="library" class="view hidden">
+  <button class="back" onclick="home()">← Back to HUD</button>
+  <h1>SAVED LIBRARY</h1>
+  <div class="subtitle">YOUR BOOKSHELF</div>
+  <div class="panel" style="padding:12px">
+    <input id="librarySearch" placeholder="🔍 Search your library..." oninput="Library.render()" style="margin:0">
+    <div id="libraryTabs" style="display:flex;gap:8px;margin-top:10px">
+      <button type="button" class="libTab active" onclick="Library.setFilter('all')" data-filter="all">All</button>
+      <button type="button" class="libTab" onclick="Library.setFilter('progress')" data-filter="progress">In Progress</button>
+      <button type="button" class="libTab" onclick="Library.setFilter('done')" data-filter="done">Completed</button>
+    </div>
+  </div>
+  <div id="libraryList" class="panel"></div>
+</div>
+
+<div id="verses" class="view hidden">
+  <button class="back" onclick="home()">← Back to HUD</button>
+  <h1>VERSE VAULT</h1>
+  <div class="subtitle">SCAN OR TYPE • YOUR OWN WORDS</div>
+  <div class="panel">
+    <label class="tiny">Reference (optional)</label><input id="verseRef" placeholder="Example: John 3:16">
+    <label class="tiny">Verse Text</label><textarea id="verseText" placeholder="Type it, or scan a page/photo below..." style="min-height:100px"></textarea>
+    <div class="grid2">
+      <button type="button" onclick="document.getElementById('verseCam').click()">📷 Scan Photo</button>
+      <button type="button" onclick="document.getElementById('verseGal').click()">🖼️ Existing Photo</button>
+    </div>
+    <input id="verseCam" class="fileInput" type="file" accept="image/*" capture="environment" onchange="Verses.scanFile(event)">
+    <input id="verseGal" class="fileInput" type="file" accept="image/*" onchange="Verses.scanFile(event)">
+    <p id="verseStatus" class="tiny"></p>
+    <button class="green" onclick="Verses.save()">Save To Vault</button>
+  </div>
+  <div class="section">Saved Verses</div>
+  <div id="verseList" class="panel"></div>
+</div>
+
+<div id="grid" class="view hidden">
+  <button class="back" onclick="Grid.stop();home()">← Back to HUD</button>
+  <h1>PERIPHERAL GRID</h1>
+  <div class="subtitle">WARM-UP • FOCUS DRILL</div>
+  <div class="panel">
+    <p class="tiny" style="text-align:center">Tap the numbers in order, 1 to 25, as fast and accurately as you can. Target: <b id="gridTarget" style="color:var(--primary)">1</b></p>
+    <button class="green" onclick="Grid.start()">Initialize Grid</button>
+    <div class="grid2">
+      <div class="stat hidden" id="gridTimerStat"><b id="gridTime">0.0s</b><small>Time</small></div>
+      <div class="stat hidden" id="gridAccStat"><b id="gridAcc">100%</b><small>Accuracy</small></div>
+    </div>
+    <div id="numGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:14px"></div>
+    <button type="button" onclick="Grid.skip()" style="margin-top:14px">Skip This Warm-Up (unlocks RSVP without playing)</button>
+  </div>
+</div>
+
+<div id="memory" class="view hidden">
+  <button class="back" onclick="Memory.stop();home()">← Back to HUD</button>
+  <h1>MEMORIZE NUMBER</h1>
+  <div class="subtitle">DIGIT SPAN • WORKING MEMORY</div>
+  <div class="panel">
+    <p class="tiny" style="text-align:center">Memorize the number, then type it back after it disappears. Gets one digit longer every round you get right.</p>
+    <button class="green" onclick="Memory.start()">Start</button>
+    <div class="grid2">
+      <div class="stat"><b id="memSpan">3</b><small>Current Length</small></div>
+      <div class="stat"><b id="memBest">0</b><small>Best Ever</small></div>
+    </div>
+    <div id="memDisplay" style="text-align:center;font-size:44px;font-weight:900;letter-spacing:8px;margin:24px 0;color:var(--primary);min-height:60px"></div>
+    <div id="memInputWrap" class="hidden">
+      <input id="memInput" type="tel" inputmode="numeric" placeholder="Type the number..." onkeydown="if(event.key==='Enter')Memory.submit()" style="width:100%;font-size:22px;text-align:center;letter-spacing:4px;padding:14px;border-radius:12px;background:#0b1220;border:1px solid var(--border);color:var(--text)">
+      <button class="green" onclick="Memory.submit()" style="margin-top:10px">Submit</button>
+    </div>
+  </div>
+</div>
+
+<div id="rsvp" class="view hidden">
+  <button class="back" onclick="Rsvp.stop();home()">← Back to HUD</button>
+  <h1>RSVP FAST READER</h1>
+  <div class="subtitle">ONE WORD AT A TIME</div>
+  <div class="panel">
+    <textarea id="rsvpText" placeholder="Paste reading text..."></textarea>
+    <button type="button" onclick="Rsvp.loadActive()">Load Active Chapter</button>
+    <div id="pagePickerWrapRsvp" class="hidden" style="margin-top:8px">
+      <label class="tiny">Or load just one page:</label>
+      <select id="pagePickerRsvp" onchange="loadSpecificPage('rsvp',this.value)"><option value="whole">Whole Chapter</option></select>
+    </div>
+    <label class="tiny">Speed: <b id="rsvpSpeedLabel">300</b> WPM</label>
+    <input id="rsvpSpeed" type="range" min="100" max="900" value="300" step="25" oninput="rsvpSpeedLabel.textContent=this.value; Rsvp.setSpeed(this.value)">
+    <button class="green" onclick="Rsvp.start()">Engage</button>
+    <button id="rsvpPauseBtn" class="hidden" onclick="Rsvp.pause()">Pause / Resume</button>
+    <button class="danger" onclick="Rsvp.stop()">Halt</button>
+    <div style="font-size:44px;height:140px;display:flex;align-items:center;justify-content:center;color:var(--primary);font-weight:1000;border:1px solid var(--primary);border-radius:14px;background:rgba(2,6,23,.55);margin-top:10px" id="rsvpWord">STANDBY</div>
+  </div>
+  <div id="quizRsvp" class="panel hidden"></div>
+</div>
+
+<div id="missions" class="view hidden">
+  <button class="back" onclick="home()">← Back to HUD</button>
+  <h1>DAILY MISSIONS</h1>
+  <div class="subtitle">RESETS EVERY DAY</div>
+  <div class="panel" id="missionList"></div>
+</div>
+
+<div id="leader" class="view hidden">
+  <button class="back" onclick="home()">← Back to HUD</button>
+  <h1>LEADERBOARD</h1>
+  <div class="subtitle">YOUR PERSONAL RECORDS</div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="stat"><span class="statOrb blue">🎖️</span><span><b id="lbLevel">1</b><small>Level</small></span></div>
+      <div class="stat"><span class="statOrb gold">⭐</span><span><b id="lbXp">0</b><small>Total XP</small></span></div>
+      <div class="stat"><span class="statOrb green">🔥</span><span><b id="lbStreak">0</b><small>Day Streak</small></span></div>
+      <div class="stat"><span class="statOrb purple">⚡</span><span><b id="lbBestWpm">0</b><small>Best WPM Ever</small></span></div>
+    </div>
+  </div>
+  <div class="section">Best Speeds &amp; Scores</div>
+  <div class="panel">
+    <div class="grid2">
+      <div class="stat"><b id="lbRegular">0</b><small>Reading WPM</small></div>
+      <div class="stat"><b id="lbLawn">0</b><small>Lawnmower WPM</small></div>
+      <div class="stat"><b id="lbRsvp">0</b><small>RSVP WPM</small></div>
+      <div class="stat"><b id="lbGrid">0s</b><small>Grid Best Time</small></div>
+      <div class="stat"><b id="lbMemSpan">0</b><small>Best Memory Span</small></div>
+    </div>
+    <div class="stat" style="margin-top:10px;text-align:left">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><small>Best Quiz Accuracy</small><b id="lbAcc">0%</b></div>
+      <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden">
+        <div id="lbAccBar" style="height:100%;background:linear-gradient(90deg,var(--primary),var(--green));width:0%"></div>
+      </div>
+    </div>
+    <div class="stat" style="margin-top:10px"><b id="lbGuides">0</b><small>Study Guides Built</small></div>
+    <div class="stat" style="margin-top:10px"><b id="lbFlash">0</b><small>Flashcard Reviews</small></div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="stat"><b id="lbAvgSession">0m</b><small>Avg. Session Length</small></div>
+      <div class="stat"><b id="lbBestDay">0</b><small>Best Day (words)</small></div>
+    </div>
+  </div>
+  <div class="section">WPM Trend</div>
+  <div class="panel">
+    <div id="wpmChart"></div>
+  </div>
+  <div class="section">Recent Activity</div>
+  <div class="panel" id="lbLog"></div>
+  <div class="section">Backup</div>
+  <div class="panel">
+    <p class="tiny">Everything here lives only in this browser. If it's ever cleared, or you reinstall, all of this is gone with no way back — unless you have a backup file. Export one now, and keep it somewhere safe (email it to yourself, save it to Drive, whatever).</p>
+    <button class="green" onclick="exportData()">Export My Data</button>
+    <button type="button" onclick="document.getElementById('importFile').click()">Import From Backup</button>
+    <input id="importFile" class="fileInput" type="file" accept="application/json" onchange="importData(event)">
+    <div id="storageUsage" class="tiny" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"></div>
+  </div>
+</div>
+
+<div id="service" class="view hidden">
+  <button class="back" onclick="home()">← Back to HUD</button>
+  <h1>SERVICE RECORD</h1>
+  <div class="subtitle">RANKS 1–50</div>
+  <div class="panel">
+    <p class="tiny" style="text-align:center">You are <b id="serviceCurrent" style="color:var(--primary)">Recruit 1</b>. Ranks past your level are dimmed until you reach them.</p>
+    <div class="rankGrid" id="rankGrid"></div>
+  </div>
+</div>
+
+<div id="achievements" class="view hidden">
+  <button class="back" onclick="home()">← Back to HUD</button>
+  <h1>ACHIEVEMENTS</h1>
+  <div class="subtitle" id="achieveCount">0 / 8 BADGES EARNED</div>
+  <div class="panel">
+    <p class="tiny">Milestone badges, separate from your rank — a record of firsts and personal bests. These don't unlock anything, they're just here to mark them.</p>
+    <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px">
+      <div id="achieveBar" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--green));width:0%"></div>
+    </div>
+  </div>
+  <div id="achieveList"></div>
+</div>
+
+<div id="replay" class="view hidden">
+  <button class="back" onclick="home()">← Back to HUD</button>
+  <h1>READING REPLAY</h1>
+  <div class="subtitle" id="replayTitle">—</div>
+  <div class="panel">
+    <p class="tiny">The story of this chapter, in order — every page, every milestone, timestamped as it actually happened.</p>
+  </div>
+  <div id="replayTimeline"></div>
+</div>
+
+<script>
+/* ============================================================
+   STATE + XP/RANK ENGINE
+   Same formula and rank ladder as the original app, on purpose.
+   One migration pass from the old app's save, one save format,
+   one render function. No overrides, no duplicate versions.
+   ============================================================ */
+const $=id=>document.getElementById(id);
+
+// "Nothing happens when I click it" has been the hardest class of bug in
+// this app because a silent JS error gives zero information to work with.
+// This turns any uncaught error, anywhere, into a visible message instead
+// of dead silence, so a future break can actually be diagnosed from a
+// screenshot rather than guessed at blind.
+window.addEventListener('error', function(e){
+  console.error('Uncaught error:', e.error||e.message);
+  try{ alert('Something broke: '+(e.message||'unknown error')+'\nLine '+(e.lineno||'?')+'. Please screenshot this exact message.'); }catch(_){}
+});
+const STORE_KEY='readingHaloV2';
+const OLD_KEY='haloState';
+
+// Every color in this app already runs through these CSS variables, so
+// swapping them swaps the whole visual theme at once -- nothing else has
+// to change.
+const THEMES={
+  halo:    {name:'Halo Blue',      primary:'#38bdf8', green:'#10b981', danger:'#ef4444', gold:'#facc15', bg:'#050b14', card:'rgba(15,23,42,.88)', border:'rgba(56,189,248,.32)'},
+  covenant:{name:'Covenant Purple',primary:'#a78bfa', green:'#22d3ee', danger:'#f472b6', gold:'#facc15', bg:'#0a0517', card:'rgba(30,15,42,.88)', border:'rgba(167,139,250,.35)'},
+  unsc:    {name:'UNSC Green',     primary:'#84cc16', green:'#facc15', danger:'#f97316', gold:'#eab308', bg:'#0a0e05', card:'rgba(20,26,10,.88)', border:'rgba(132,204,22,.32)'},
+  gold:    {name:'Gold General',   primary:'#fbbf24', green:'#34d399', danger:'#ef4444', gold:'#fde047', bg:'#0f0a03', card:'rgba(30,22,8,.88)', border:'rgba(251,191,36,.35)'},
+  parchment:{name:'Parchment Book',primary:'#b45309', green:'#15803d', danger:'#b91c1c', gold:'#a16207', bg:'#f4ead8', card:'rgba(255,251,240,.9)', border:'rgba(180,83,9,.35)'}
+};
+
+function applyTheme(id){
+  const t=THEMES[id]||THEMES.halo;
+  const root=document.documentElement.style;
+  root.setProperty('--primary',t.primary);
+  root.setProperty('--green',t.green);
+  root.setProperty('--danger',t.danger);
+  root.setProperty('--gold',t.gold);
+  root.setProperty('--bg',t.bg);
+  root.setProperty('--card',t.card);
+  root.setProperty('--border',t.border);
+  if(id==='parchment'){
+    root.setProperty('--text','#1f2937');
+    root.setProperty('--muted','#6b5637');
+  }else{
+    root.setProperty('--text','#f8fafc');
+    root.setProperty('--muted','#94a3b8');
+  }
+}
+
+function defaultState(){
+  return {
+    xp:0, level:1, bestWpm:0, wordsRead:0,
+    highScores:{regularWpm:0,lawnWpm:0,rsvpWpm:0,gridTime:0,quizAccuracy:0,flashReviews:0},
+    flashcards:[],
+    logs:[], lastDay:'', streakDays:[], library:[],
+    activeChapter:null,
+    modePassed:{},
+    missions:{},
+    guides:0,
+    verses:[],
+    theme:'halo'
+  };
+}
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  try{
+    const old=JSON.parse(localStorage.getItem(OLD_KEY)||'null');
+    if(old && (old.xp || old.level)){
+      const migrated=defaultState();
+      migrated.xp=old.xp||0;
+      migrated.level=old.level||1;
+      migrated.bestWpm=old.bestWpm||0;
+      migrated.wordsRead=old.wordsRead||0;
+      migrated.library=old.library||[];
+      migrated.guides=old.guides||0;
+      migrated.verses=old.nltVerses||[];
+      if(old.highScores){
+        migrated.highScores.regularWpm=old.highScores.regularWpm||0;
+        migrated.highScores.lawnWpm=old.highScores.lawnWpm||0;
+        migrated.highScores.rsvpWpm=old.highScores.rsvpWpm||0;
+        migrated.highScores.gridTime=old.highScores.gridTime||0;
+        migrated.highScores.quizAccuracy=old.highScores.quizAccuracy||0;
+        migrated.highScores.flashReviews=old.highScores.flashReviews||0;
+      }
+      migrated.justMigrated=true;
+      return migrated;
+    }
+  }catch(e){}
+  return defaultState();
+}
+
+let state=loadState();
+
+// One-time cleanup for WPM values that were recorded before the
+// too-fast-to-be-real guard existed. A fabricated number like 10,518 WPM
+// shouldn't stay as anyone's permanent "best" just because it got saved
+// before this check was added -- reset it so a real one can replace it.
+(function cleanupImplausibleWpm(){
+  const MAX_PLAUSIBLE_WPM=1500;
+  let changed=false;
+  if((state.bestWpm||0)>MAX_PLAUSIBLE_WPM){ state.bestWpm=0; changed=true; }
+  if(state.highScores){
+    ['regularWpm','lawnWpm','rsvpWpm'].forEach(k=>{
+      if((state.highScores[k]||0)>MAX_PLAUSIBLE_WPM){ state.highScores[k]=0; changed=true; }
+    });
+  }
+  if(state.wpmHistory){
+    const cleaned=state.wpmHistory.filter(v=>(typeof v==='object'?v.wpm:v)<=MAX_PLAUSIBLE_WPM);
+    if(cleaned.length!==state.wpmHistory.length){ state.wpmHistory=cleaned; changed=true; }
+  }
+  if(changed) localStorage.setItem(STORE_KEY, JSON.stringify(state));
+})();
+
+function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+/* ============================================================
+   AI — talks to the app's private Worker (Val Town), which
+   holds the real Anthropic API key. This file never sees the
+   key itself. Every AI feature below fails soft: if the network
+   is down or the call errors, callers fall back to the original
+   local logic so the app never breaks because AI is unavailable.
+   ============================================================ */
+const AI={
+  ENDPOINT:'https://jake92094--d418f494772411f1aaab1607ee4eb77e.web.val.run',
+
+  async ask(prompt, maxTokens){
+    const res=await fetch(this.ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:maxTokens||1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    if(!res.ok) throw new Error('AI request failed: '+res.status);
+    const data=await res.json();
+    const block=(data.content||[]).find(c=>c.type==='text');
+    if(!block) throw new Error('AI returned no text');
+    return block.text;
+  },
+
+  extractJson(text){
+    const match=text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if(!match) throw new Error('No JSON found in AI response');
+    return JSON.parse(match[0]);
+  },
+
+  async generateQuiz(text){
+    const prompt='You are a reading comprehension quiz writer. Read the passage '
+      +'below and write exactly 4 multiple-choice questions that test real '
+      +'understanding of it (main idea, a supporting detail, a takeaway, and '
+      +'one vocabulary-in-context question). Each question needs exactly 4 '
+      +'options, only one correct. Respond with ONLY a JSON array, no other '
+      +'text, in this exact shape: '
+      +'[{"q":"question text","options":["a","b","c","d"],"a":0,"cat":"mainIdea","explain":"why this is correct"}] '
+      +'where "a" is the index (0-3) of the correct option, and "cat" is one of: '
+      +'mainIdea, support, takeaway, keyword.\n\nPassage:\n'+text.slice(0,6000);
+    const raw=await this.ask(prompt,1200);
+    const qs=this.extractJson(raw);
+    if(!Array.isArray(qs)||!qs.length) throw new Error('Bad quiz shape');
+    return qs;
+  },
+
+  async cleanupOcr(text){
+    const prompt='This text was scanned from a photo of a book page using OCR '
+      +'and likely has broken words, misread letters, or garbled spacing. Fix '
+      +'it to read as clean, correct text, keeping the original wording and '
+      +'meaning as closely as possible -- do not summarize or add anything. '
+      +'Respond with ONLY the corrected text, no commentary.\n\n'+text.slice(0,6000);
+    const cleaned=await this.ask(prompt,1500);
+    return cleaned.trim();
+  },
+
+  async identifyBook(text){
+    const prompt='Based on this excerpt, guess the book title, author, and '
+      +'chapter/section name if you can tell. If you genuinely cannot tell, '
+      +'use an empty string for that field -- never invent a guess you are not '
+      +'reasonably confident in. Respond with ONLY JSON in this exact shape: '
+      +'{"title":"","author":"","chapter":""}\n\nExcerpt:\n'+text.slice(0,3000);
+    const raw=await this.ask(prompt,300);
+    return this.extractJson(raw);
+  }
+};
+
+function expFor(l){ if(l<=1) return 0; return l*200 + l*(l-1)*25 - 125; }
+function calcLevel(xp){ let l=1; while(l<50 && xp>=expFor(l+1)) l++; return l; }
+function rankIcon(l){
+  if(l>=50) return '⭕'; if(l==49) return '☄️'; if(l==48) return '☀️';
+  if(l==47) return '🌑'; if(l==46) return '🌔'; if(l==45) return '🌓'; if(l==44) return '🌒';
+  if(l>=40) return '◆'; if(l>=34) return '🔷'; if(l>=28) return '🟩';
+  if(l>=22) return '🟥'; if(l>=16) return '🔶'; if(l>=10) return '🟧';
+  return '🔵';
+}
+function rankColor(l){
+  if(l>=50) return 'linear-gradient(135deg,#f8fafc,#94a3b8)';
+  if(l>=48) return 'linear-gradient(135deg,#fde68a,#f59e0b)';
+  if(l>=44) return 'radial-gradient(circle,#1a1a2e 0%,#020205 100%)';
+  if(l>=31) return 'linear-gradient(135deg,#b82c76 0%,#f3ee54 100%)';
+  if(l>=21) return 'linear-gradient(135deg,#671d6b 0%,#a83279 100%)';
+  if(l>=11) return 'linear-gradient(135deg,#1c2663 0%,#7c3123 100%)';
+  return 'radial-gradient(circle,#2b3a8a 0%,#11163a 100%)';
+}
+// Border/glow accent per tier -- matches the border-color values from the
+// same custom design, not a separate guess.
+function rankHue(l){
+  if(l>=50) return '#f8fafc';
+  if(l>=48) return '#fbbf24';
+  if(l>=44) return '#64748b';
+  if(l>=31) return '#38ef7d';
+  if(l>=21) return '#d130ff';
+  if(l>=11) return '#e65c00';
+  return '#3b62ff';
+}
+// Same custom design as the tier colors -- circle for 1-10, soft square
+// for 11-20, an organic blob shape for 21-30, rounded rectangle for
+// 31-43. Glyph tier (44+) stays circular since those are icons, not
+// numbers, and a non-circular frame would clip them oddly.
+function rankShape(l){
+  if(l>=44) return '50%';
+  if(l>=31) return '12px';
+  if(l>=21) return '35% 65% 35% 65% / 65% 35% 65% 35%';
+  if(l>=11) return '4px';
+  return '50%';
+}
+function rankName(l){
+  return l>=50?'General'
+    : l>=44?'Moon Rank '+l
+    : l>=40?'Commander '+l
+    : l>=34?'Major '+l
+    : l>=28?'Captain '+l
+    : l>=22?'Lieutenant '+l
+    : l>=16?'Sergeant '+l
+    : l>=10?'Corporal '+l
+    : 'Recruit '+l;
+}
+function today(){ return new Date().toDateString(); }
+function getStreak(){
+  state.streakDays=state.streakDays||[];
+  return state.streakDays.includes(today()) ? state.streakDays.length : state.streakDays.length;
+}
+function markToday(){
+  state.streakDays=state.streakDays||[];
+  if(!state.streakDays.includes(today())) state.streakDays.push(today());
+}
+
+// Resets XP and level back to 1, but deliberately keeps everything else
+// intact -- library, achievements, best WPM, streak, all of it. The point
+// is a fresh climb up the ranks, not losing real progress. Adds a
+// permanent prestige star as a mark of having done it before.
+function prestigeReset(){
+  if(state.level<50){ alert('Reach level 50 first.'); return; }
+  if(!confirm('Restart at Level 1? Your XP and rank reset, but everything else -- library, achievements, best WPM, streak -- stays exactly as it is. This adds a permanent Prestige star next to your name.')) return;
+  state.prestige=(state.prestige||0)+1;
+  state.xp=0;
+  state.level=1;
+  save();
+  render();
+  alert('Welcome back to Recruit 1 — Prestige '+state.prestige+'.');
+}
+
+function addXp(n, act){
+  state.xp=Math.max(0, state.xp+n);
+  const old=state.level;
+  state.level=calcLevel(state.xp);
+  state.logs=state.logs||[];
+  state.logs.unshift({act, delta:n, date:Date.now(), level:state.level});
+  state.logs=state.logs.slice(0,30);
+  markToday();
+  save();
+  render();
+  if(state.level>old) showLevelUpToast(state.level);
+}
+
+function render(){
+  if(state.lastDay!==today()){ state.missions={}; state.lastDay=today(); save(); }
+  refreshActiveChapterBanner();
+  renderThemePicker();
+  checkAchievementUnlocks();
+  $('xp').textContent=state.xp;
+  $('rankName').textContent=rankName(state.level);
+  $('nextXp').textContent=state.level>=50?'MAX':expFor(state.level+1);
+  $('badge').classList.add('haloRankBadge');
+  $('badge').innerHTML=rankBadgeHtml(state.level, false, true);
+  $('badge').style.background='transparent';
+  $('badge').style.borderRadius='0';
+  $('bestWpm').textContent=state.bestWpm;
+  $('wordsRead').textContent=state.wordsRead;
+  $('quizBest').textContent=(state.highScores.quizAccuracy||0)+'%';
+  $('streak').textContent=getStreak();
+  const prev=expFor(state.level), next=state.level>=50?state.xp:expFor(state.level+1);
+  $('rankFill').style.width=(state.level>=50?100:Math.max(0,Math.min(100,(state.xp-prev)/(next-prev)*100)))+'%';
+  const prestigeBtn=$('prestigeBtn'), prestigeLine=$('prestigeLine');
+  if(prestigeBtn) prestigeBtn.classList.toggle('hidden', state.level<50);
+  if(prestigeLine){
+    if(state.prestige>0){
+      prestigeLine.textContent='⭐'.repeat(Math.min(state.prestige,5))+' Prestige '+state.prestige;
+      prestigeLine.classList.remove('hidden');
+    }else{
+      prestigeLine.classList.add('hidden');
+    }
+  }
+  const doneCount=Object.keys(state.missions||{}).length;
+  if($('menuMissionSummary')) $('menuMissionSummary').textContent='Missions '+doneCount+'/'+MISSIONS.length;
+}
+
+function setTheme(id){
+  state.theme=id;
+  applyTheme(id);
+  save();
+  renderThemePicker();
+}
+
+function renderThemePicker(){
+  const el=$('themePicker');
+  if(!el) return;
+  el.innerHTML=Object.keys(THEMES).map(id=>{
+    const t=THEMES[id];
+    const active=state.theme===id;
+    return '<div onclick="setTheme(\''+id+'\')" title="'+esc(t.name)+'" style="width:30px;height:30px;border-radius:50%;cursor:pointer;background:linear-gradient(135deg,'+t.primary+','+t.green+');'
+      +(active?'box-shadow:0 0 0 3px #fff,0 0 10px '+t.primary:'box-shadow:0 0 0 1px rgba(255,255,255,.3)')+'"></div>';
+  }).join('');
+}
+
+// Everything lives in this browser's storage only. These give a real way
+// out if that's ever cleared, the file gets reinstalled, or a device
+// changes -- a plain JSON file the person controls, not tied to this
+// browser at all.
+function exportData(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='reading-trainer-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importData(ev){
+  const file=ev.target.files&&ev.target.files[0];
+  ev.target.value='';
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(){
+    let parsed;
+    try{
+      parsed=JSON.parse(reader.result);
+    }catch(e){
+      alert('Could not read that file — it doesn\'t look like valid backup data.');
+      return;
+    }
+    if(!parsed || typeof parsed!=='object' || typeof parsed.xp!=='number'){
+      alert('That file doesn\'t look like a real backup of this app\'s data.');
+      return;
+    }
+    if(!confirm('Import this backup? This replaces everything currently saved here -- XP, rank, library, verses, all of it -- with what\'s in the file. This can\'t be undone.')) return;
+    state=parsed;
+    save();
+    applyTheme(state.theme);
+    render();
+    refreshLocks();
+    alert('Backup restored.');
+  };
+  reader.readAsText(file);
+}
+
+// Called whenever a Reading/Lawnmower/RSVP session finishes. If the
+// active chapter is tagged with a groupId (came from a multi-page scan),
+// this marks progress against it -- either one specific page (if loaded
+// via "Use Just This Page") or the whole chapter at once (if the full
+// combined text was read in one sitting).
+function markChapterProgress(){
+  const ch=state.activeChapter;
+  if(!ch||!ch.groupId) return;
+  const prog=state.chapterProgress&&state.chapterProgress[ch.groupId];
+  if(!prog) return;
+  prog.events=prog.events||[];
+  if(ch.pageIndex!==null&&ch.pageIndex!==undefined){
+    if(!prog.readPages.includes(ch.pageIndex)){
+      prog.readPages.push(ch.pageIndex);
+      prog.events.push({type:'page',pageIndex:ch.pageIndex,date:Date.now()});
+    }
+  }else{
+    const newlyRead=Array.from({length:prog.pageCount},(_,i)=>i).filter(i=>!prog.readPages.includes(i));
+    prog.readPages=Array.from({length:prog.pageCount},(_,i)=>i);
+    if(newlyRead.length) prog.events.push({type:'whole',pageCount:newlyRead.length,date:Date.now()});
+  }
+  save();
+  checkChapterComplete(ch.groupId);
+}
+
+// Library entries don't store their own copy of progress -- they just
+// share the groupId, so this is always reading the single source of
+// truth instead of two copies that could drift out of sync.
+function chapterProgressText(groupId){
+  const prog=state.chapterProgress&&state.chapterProgress[groupId];
+  if(!prog||!prog.pageCount) return '';
+  const done=prog.readPages.length, total=prog.pageCount;
+  if(done>=total) return 'All '+total+' pages read — chapter complete! ✅';
+  return done+' of '+total+' pages read — '+(total-done)+' more to finish this chapter.';
+}
+
+function checkChapterComplete(groupId){
+  const prog=state.chapterProgress&&state.chapterProgress[groupId];
+  if(!prog||prog.readPages.length<prog.pageCount||prog.notifiedComplete) return;
+  prog.notifiedComplete=true;
+  prog.completedDate=Date.now();
+  prog.events=prog.events||[];
+  prog.events.push({type:'complete',date:prog.completedDate});
+  save();
+  if(!confirm('You\'ve finished every page of "'+prog.title+'"! Build a Study Guide from the whole chapter now?')) return;
+  const items=(state.library||[]).filter(x=>x.groupId===groupId&&x.type==='scanned chapter');
+  // Prefer an actual "whole chapter" save if one exists; otherwise
+  // reconstruct the full text by stitching together the individual pages
+  // in order, since that's the only way it was ever saved.
+  let fullText=null, fullTitle=prog.title;
+  const wholeEntry=items.find(x=>x.pageIndex===null||x.pageIndex===undefined);
+  if(wholeEntry){
+    fullText=wholeEntry.text;
+    fullTitle=wholeEntry.title;
+  }else{
+    const pageEntries=items.filter(x=>typeof x.pageIndex==='number').sort((a,b)=>a.pageIndex-b.pageIndex);
+    if(pageEntries.length){
+      fullText=pageEntries.map(x=>x.text).join('\n\n');
+    }
+  }
+  if(!fullText){ openView('study'); return; }
+  state.activeChapter={title:fullTitle,chapter:'',pages:'1-'+prog.pageCount,text:fullText,groupId,pageIndex:null,date:Date.now()};
+  fillReadingFields(fullText,fullTitle);
+  save();
+  openView('study');
+}
+
+// Updates the existing Library entry for this exact groupId+pageIndex if
+// one already exists, instead of always creating a new one. Without this,
+// re-saving the same page or chapter (which happens constantly during
+// normal use -- rescan, re-load, retry, rebuilding a Study Guide) piled
+// up an endless stack of duplicates that all looked "active" at once.
+function upsertLibraryEntry(entry){
+  state.library=state.library||[];
+  const existing=entry.groupId?state.library.findIndex(x=>
+    x.groupId===entry.groupId&&
+    (x.pageIndex===entry.pageIndex||(x.pageIndex==null&&entry.pageIndex==null))&&
+    x.type===entry.type
+  ):-1;
+  if(existing!==-1){
+    state.library[existing]={...state.library[existing],...entry,date:Date.now()};
+  }else{
+    state.library.unshift(entry);
+  }
+}
+
+// Lets Reading/Lawnmower/RSVP load one specific page from the active
+// book instead of only ever offering the whole chapter. Only shows up
+// when the active chapter actually has individually-saved pages to
+// choose from (see saveActive, which now always saves both).
+function renderPagePicker(mode){
+  const selId=mode==='lawn'?'pagePickerLawn':mode==='rsvp'?'pagePickerRsvp':'pagePickerRead';
+  const wrapId=mode==='lawn'?'pagePickerWrapLawn':mode==='rsvp'?'pagePickerWrapRsvp':'pagePickerWrapRead';
+  const sel=$(selId), wrap=$(wrapId);
+  if(!sel||!wrap) return;
+  const ch=state.activeChapter;
+  const gid=ch&&ch.groupId;
+  const pages=gid?(state.library||[]).filter(x=>x.groupId===gid&&x.type==='scanned chapter'&&typeof x.pageIndex==='number').sort((a,b)=>a.pageIndex-b.pageIndex):[];
+  if(!pages.length){ wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  sel.innerHTML='<option value="whole">Whole Chapter</option>'
+    +pages.map(p=>'<option value="'+p.pageIndex+'">Page '+(p.pageIndex+1)+'</option>').join('');
+}
+
+function loadSpecificPage(mode, value){
+  if(value==='whole'){
+    if(mode==='rsvp') Rsvp.loadActive(); else Reader.loadActive(mode);
+    return;
+  }
+  const ch=state.activeChapter;
+  const gid=ch&&ch.groupId;
+  const pageIndex=parseInt(value,10);
+  const entry=(state.library||[]).find(x=>x.groupId===gid&&x.type==='scanned chapter'&&x.pageIndex===pageIndex);
+  if(!entry){ alert('Could not find that page.'); return; }
+  if(mode==='rsvp') Rsvp.stop(); else Reader.stop(mode);
+  const ta=$(mode==='lawn'?'lawnText':mode==='rsvp'?'rsvpText':'readText');
+  if(ta) ta.value=entry.text;
+}
+
+function refreshActiveChapterBanner(){
+  const el=$('activeChapterBanner');
+  if(!el) return;
+  const ch=state.activeChapter;
+  if(!ch || !ch.text){
+    el.textContent='No active chapter yet — scan a page, build a Study Guide, or load something from your Library.';
+    renderChapterHeatMap();
+    renderNotes();
+    return;
+  }
+  const words=wordCount(ch.text);
+  const extra=[ch.chapter,ch.pages?('p. '+ch.pages):''].filter(Boolean).join(' • ');
+  const progress=ch.groupId?chapterProgressText(ch.groupId):'';
+  el.innerHTML='<b style="color:var(--green)">Active:</b> '+esc(ch.title||'Untitled')+(ch.author?' by '+esc(ch.author):'')+(extra?' — '+esc(extra):'')+' <span style="color:var(--muted)">('+words+' words)</span>'
+    +(progress?'<br><span class="tiny" style="color:var(--primary)">'+esc(progress)+'</span>':'');
+  renderChapterHeatMap();
+  renderNotes();
+}
+
+// Same tracked page-progress data as the banner text, just shown as a
+// grid instead of a sentence -- green = read, yellow = the page you're
+// currently on, gray = not read yet.
+function renderChapterHeatMap(){
+  const el=$('chapterHeatMap');
+  if(!el) return;
+  const ch=state.activeChapter;
+  const prog=ch&&ch.groupId&&state.chapterProgress&&state.chapterProgress[ch.groupId];
+  if(!prog||!prog.pageCount||prog.pageCount<2){ el.innerHTML=''; return; }
+  const cells=Array.from({length:prog.pageCount},(_,i)=>{
+    const isRead=prog.readPages.includes(i);
+    const isCurrent=ch.pageIndex===i;
+    const bg=isCurrent?'var(--gold)':(isRead?'var(--green)':'rgba(148,163,184,.25)');
+    return '<div title="Page '+(i+1)+(isRead?' — read':(isCurrent?' — current':' — not read yet'))+'" style="flex:1;min-width:14px;height:14px;border-radius:3px;background:'+bg+'"></div>';
+  }).join('');
+  el.innerHTML='<div class="tiny" style="margin-bottom:4px;color:var(--muted)">Chapter progress by page</div>'
+    +'<div style="display:flex;gap:3px;flex-wrap:wrap">'+cells+'</div>';
+}
+
+function noteKeyFor(ch){
+  if(!ch||!ch.text) return null;
+  return ch.groupId||('title:'+ch.title);
+}
+
+function renderNotes(){
+  const el=$('notesSection');
+  if(!el) return;
+  const ch=state.activeChapter;
+  const key=noteKeyFor(ch);
+  if(!key){ el.innerHTML=''; return; }
+  state.notes=state.notes||{};
+  const existing=state.notes[key]||'';
+  el.innerHTML='<div class="panel" style="padding:12px">'
+    +'<div class="tiny" style="margin-bottom:6px;color:var(--muted)">📝 Notes for this chapter (saves automatically)</div>'
+    +'<textarea id="chapterNotesBox" placeholder="Jot down anything worth remembering about this chapter..." style="width:100%;min-height:70px;border-radius:10px;padding:10px;background:#0b1220;border:1px solid var(--border);color:var(--text);font-size:14px" oninput="saveNote()">'+esc(existing)+'</textarea>'
+    +'</div>';
+}
+
+let _noteSaveTimer=null;
+function saveNote(){
+  clearTimeout(_noteSaveTimer);
+  _noteSaveTimer=setTimeout(()=>{
+    const ch=state.activeChapter;
+    const key=noteKeyFor(ch);
+    if(!key) return;
+    state.notes=state.notes||{};
+    const val=$('chapterNotesBox').value;
+    if(val.trim()) state.notes[key]=val;
+    else delete state.notes[key];
+    save();
+  },500);
+}
+
+function renderMissions(){
+  state.missions=state.missions||{};
+  $('missionList').innerHTML=MISSIONS.map(m=>
+    '<div class="branch-card" style="'+(state.missions[m.id]?'opacity:.6;border-left-color:var(--green)':'')+'">'
+    +'<h3>'+(state.missions[m.id]?'✅ ':'⬜ ')+m.label+'</h3>'
+    +'<p class="tiny">'+(state.missions[m.id]?'Claimed today.':'+' + m.xp + ' XP when completed.')+'</p>'
+    +'</div>'
+  ).join('');
+}
+
+// Uses the real browser Storage API when available (most modern mobile
+// browsers support it) so this is an honest reading of actual usage, not
+// a guess. Falls back to just the app's own data size if the API isn't
+// supported, rather than showing nothing.
+async function renderStorageUsage(){
+  const el=$('storageUsage');
+  if(!el) return;
+  const dataSize=new Blob([JSON.stringify(state)]).size;
+  const sizeKb=(dataSize/1024).toFixed(1);
+  let html='<b>Your saved data:</b> '+sizeKb+' KB';
+  if(navigator.storage&&navigator.storage.estimate){
+    try{
+      const est=await navigator.storage.estimate();
+      if(est.quota){
+        const usedMb=(est.usage/1024/1024).toFixed(1);
+        const quotaMb=(est.quota/1024/1024).toFixed(0);
+        const pct=Math.round((est.usage/est.quota)*100);
+        html+='<br><b>Browser storage:</b> '+usedMb+' MB used of about '+quotaMb+' MB available ('+pct+'%)';
+        if(pct>70) html+='<br><span style="color:var(--gold)">Getting up there — worth exporting a backup and keeping an eye on it.</span>';
+      }
+    }catch(e){ /* estimate() can fail silently on some browsers -- data size above still shows */ }
+  }
+  el.innerHTML=html;
+}
+
+function renderLeader(){
+  $('lbLevel').textContent=state.level;
+  $('lbXp').textContent=state.xp;
+  $('lbStreak').textContent=getStreak();
+  $('lbBestWpm').textContent=state.bestWpm||0;
+  const hs=state.highScores||{};
+  $('lbRegular').textContent=hs.regularWpm||0;
+  $('lbLawn').textContent=hs.lawnWpm||0;
+  $('lbRsvp').textContent=hs.rsvpWpm||0;
+  $('lbGrid').textContent=hs.gridTime?hs.gridTime.toFixed(1)+'s':'0s';
+  $('lbMemSpan').textContent=hs.memorySpan||0;
+  $('lbAcc').textContent=(hs.quizAccuracy||0)+'%';
+  if($('lbAccBar')) $('lbAccBar').style.width=(hs.quizAccuracy||0)+'%';
+  $('lbGuides').textContent=state.guides||0;
+  $('lbFlash').textContent=hs.flashReviews||0;
+  const durations=state.sessionDurations||[];
+  const avgSec=durations.length?durations.reduce((a,b)=>a+b,0)/durations.length:0;
+  $('lbAvgSession').textContent=avgSec>=60?Math.round(avgSec/60)+'m':Math.round(avgSec)+'s';
+  const dailyWords=Object.values(state.dailyWordsRead||{});
+  $('lbBestDay').textContent=dailyWords.length?Math.max(...dailyWords):0;
+  renderWpmChart();
+  renderStorageUsage();
+  const logs=state.logs||[];
+  $('lbLog').innerHTML=logs.length
+    ? logs.map(l=>'<div style="border-bottom:1px solid var(--border);padding:10px 0"><strong style="color:var(--primary)">'+esc(l.act)+'</strong><br><span class="tiny">'+new Date(l.date).toLocaleString()+' • XP '+(l.delta>=0?'+':'')+l.delta+' • Level '+l.level+'</span></div>').join('')
+    : '<p class="tiny">No activity yet. Finish a training mode to see it here.</p>';
+}
+
+function renderWpmChart(){
+  const el=$('wpmChart');
+  if(!el) return;
+  const raw=state.wpmHistory||[];
+  const hist=raw.map(v=>typeof v==='object'?v.wpm:v);
+  if(hist.length<2){
+    el.innerHTML='<p class="tiny">Finish a couple of quizzes and your WPM trend will show up here.</p>';
+    return;
+  }
+  const w=300,h=110,pad=10;
+  const max=Math.max(...hist),min=Math.min(...hist);
+  const range=Math.max(1,max-min);
+  const stepX=(w-pad*2)/(hist.length-1);
+  const points=hist.map((v,i)=>{
+    const x=pad+i*stepX;
+    const y=pad+(h-pad*2)*(1-(v-min)/range);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  el.innerHTML='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:140px" preserveAspectRatio="none">'
+    +'<polyline points="'+points+'" fill="none" stroke="var(--primary)" stroke-width="2.5" vector-effect="non-scaling-stroke"/>'
+    +hist.map((v,i)=>{
+      const x=pad+i*stepX, y=pad+(h-pad*2)*(1-(v-min)/range);
+      return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3" fill="var(--gold)"/>';
+    }).join('')
+    +'</svg>'
+    +'<div class="grid2" style="margin-top:6px">'
+      +'<p class="tiny">Lowest: '+min+' WPM</p>'
+      +'<p class="tiny" style="text-align:right">Highest: '+max+' WPM</p>'
+    +'</div>';
+}
+
+function rankTierClass(l){
+  if(l<=10) return 'tier1';
+  if(l<=20) return 'tier2';
+  if(l<=30) return 'tier3';
+  if(l<=40) return 'tier4';
+  if(l<=43) return 'tier5';
+  return 'tier6';
+}
+
+function celestialClass(l){
+  return l===44?'crescent':l===45?'half-moon':l===46?'full-moon':l===47?'eclipse':l===48?'sun':l===49?'comet':'nova';
+}
+
+function rankBadgeHtml(l, locked, current){
+  const tier=rankTierClass(l);
+  let html='<div class="rankTile '+tier+(locked?' locked':'')+(current?' current':'')+'" title="'+esc(rankName(l))+'">';
+  if(l>=44){
+    // Celestial levels are symbols only — no numbers on top of the icon.
+    html+='<div class="celestial-art '+celestialClass(l)+'"></div>';
+  }else{
+    html+='<div class="rankRing"><span class="rankNum">'+l+'</span></div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function renderService(){
+  $('serviceCurrent').textContent=rankName(state.level);
+  let html='';
+  for(let l=1;l<=50;l++){
+    html+=rankBadgeHtml(l, l>state.level, l===state.level);
+  }
+  $('rankGrid').innerHTML=html;
+}
+
+// Achievements are only actually checked when something calls this (not
+// continuously), so the recorded date is "first time this was noticed,"
+// not the exact instant it happened -- honest limitation, still useful
+// for a timeline. Called from both the Achievements screen and the main
+// Hub render so it's captured as early as reasonably possible.
+function checkAchievementUnlocks(){
+  const isFirstRun=!state.achievementDates;
+  state.achievementDates=state.achievementDates||{};
+  let changed=false;
+  const newlyUnlocked=[];
+  ACHIEVEMENTS.forEach(a=>{
+    if(a.check()&&!state.achievementDates[a.id]){
+      state.achievementDates[a.id]=Date.now();
+      changed=true;
+      if(!isFirstRun) newlyUnlocked.push(a);
+    }
+  });
+  if(changed) save();
+  newlyUnlocked.forEach((a,i)=>setTimeout(()=>showAchievementToast(a), i*3800));
+}
+
+function showAchievementToast(a){
+  const toast=document.createElement('div');
+  toast.className='achieveToast';
+  toast.innerHTML='<div style="font-size:32px">'+a.icon+'</div>'
+    +'<div><div style="font-size:10px;letter-spacing:1.5px;opacity:.75">ACHIEVEMENT UNLOCKED</div>'
+    +'<div style="font-size:16px">'+a.name+'</div></div>';
+  document.body.appendChild(toast);
+  setTimeout(()=>{
+    toast.classList.add('out');
+    setTimeout(()=>toast.remove(),450);
+  },3200);
+}
+
+// Same visual treatment as achievement unlocks, but for level-ups --
+// replaces the old plain blocking alert() with the same non-intrusive
+// toast, using the new rank's own icon and color so it actually looks
+// like the badge you just earned instead of generic text.
+function showLevelUpToast(level){
+  const toast=document.createElement('div');
+  toast.className='achieveToast';
+  toast.style.background=rankColor(level);
+  toast.innerHTML='<div style="font-size:32px">'+rankIcon(level)+'</div>'
+    +'<div><div style="font-size:10px;letter-spacing:1.5px;opacity:.75">PROMOTED</div>'
+    +'<div style="font-size:16px">'+esc(rankName(level))+'</div></div>';
+  document.body.appendChild(toast);
+  setTimeout(()=>{
+    toast.classList.add('out');
+    setTimeout(()=>toast.remove(),450);
+  },3200);
+}
+
+function renderAchievements(){
+  checkAchievementUnlocks();
+  const earned=ACHIEVEMENTS.filter(a=>a.check());
+  $('achieveCount').textContent=earned.length+' / '+ACHIEVEMENTS.length+' BADGES EARNED';
+  $('achieveBar').style.width=Math.round(earned.length/ACHIEVEMENTS.length*100)+'%';
+  $('achieveList').innerHTML=ACHIEVEMENTS.map(a=>{
+    const unlocked=a.check();
+    return '<div class="branch-card" style="display:flex;align-items:center;gap:14px'+(unlocked?'':';opacity:.5')+'">'
+      +'<div style="font-size:28px">'+a.icon+'</div>'
+      +'<div><h3 style="margin:0">'+esc(a.name)+'</h3>'
+      +'<p class="tiny" style="margin:2px 0 0">'+(unlocked?'Unlocked':'Locked')+' • '+esc(a.desc)+'</p></div>'
+      +'</div>';
+  }).join('');
+}
+
+let replayGroupId=null;
+
+function openReplay(groupId){
+  replayGroupId=groupId;
+  openView('replay');
+}
+
+function renderReplay(){
+  const groupId=replayGroupId;
+  const prog=groupId&&state.chapterProgress&&state.chapterProgress[groupId];
+  if(!prog){
+    $('replayTitle').textContent='—';
+    $('replayTimeline').innerHTML='<p class="tiny">No progress data found for this chapter.</p>';
+    return;
+  }
+  $('replayTitle').textContent=prog.title;
+  const start=prog.startedDate||0;
+  const end=(prog.completedDate||Date.now())+86400000; // small grace window past completion
+
+  const items=[{date:start, icon:'📅', text:'Started "'+prog.title+'"'}];
+
+  (prog.events||[]).forEach(e=>{
+    if(e.type==='page') items.push({date:e.date, icon:'📄', text:'Read page '+(e.pageIndex+1)});
+    else if(e.type==='whole') items.push({date:e.date, icon:'📖', text:'Read '+e.pageCount+' page'+(e.pageCount===1?'':'s')+' in one sitting'});
+    else if(e.type==='complete') items.push({date:e.date, icon:'🎉', text:'Finished every page!'});
+  });
+
+  (state.wpmHistory||[]).forEach(h=>{
+    if(typeof h==='object'&&h.date>=start&&h.date<=end){
+      items.push({date:h.date, icon:'⚡', text:h.wpm+' WPM, '+h.acc+'% quiz score'});
+    }
+  });
+
+  const dates=state.achievementDates||{};
+  ACHIEVEMENTS.forEach(a=>{
+    const d=dates[a.id];
+    if(d&&d>=start&&d<=end) items.push({date:d, icon:a.icon, text:'Unlocked: '+a.name});
+  });
+
+  items.sort((a,b)=>a.date-b.date);
+
+  $('replayTimeline').innerHTML=items.map(it=>
+    '<div class="branch-card" style="display:flex;gap:12px;align-items:flex-start">'
+      +'<div style="font-size:22px">'+it.icon+'</div>'
+      +'<div><p style="margin:0">'+esc(it.text)+'</p><p class="tiny" style="margin:2px 0 0;color:var(--muted)">'+new Date(it.date).toLocaleString()+'</p></div>'
+    +'</div>'
+  ).join('');
+}
+
+function newBest(key,value,label,lowerIsBetter){
+  state.highScores=state.highScores||{};
+  const old=+state.highScores[key]||0;
+  const better=lowerIsBetter ? (!old || value<old) : (value>old);
+  if(better){ state.highScores[key]=value; return true; }
+  return false;
+}
+
+const MISSIONS=[
+  {id:'train', label:'Complete one warm-up (Peripheral Grid)', xp:60},
+  {id:'read', label:'Finish one reading session (any mode)', xp:50},
+  {id:'quiz', label:'Pass one quiz at 80%+', xp:100},
+  {id:'guide', label:'Build one Study Guide', xp:75},
+  {id:'verse', label:'Save one verse to your Vault', xp:15}
+];
+
+function totalPagesRead(){
+  const cp=state.chapterProgress||{};
+  return Object.values(cp).reduce((sum,p)=>sum+(p.readPages?p.readPages.length:0),0);
+}
+
+// One-time milestone badges, separate from the rank/XP system -- these
+// don't unlock anything, they're just a record of firsts and personal
+// bests. Each check() reads directly off state that's already tracked
+// elsewhere, no separate bookkeeping to keep in sync.
+function booksCompleted(){
+  const cp=state.chapterProgress||{};
+  return Object.values(cp).filter(p=>p.pageCount>0&&p.readPages.length>=p.pageCount).length;
+}
+function flashcardsMastered(){
+  return (state.flashcards||[]).filter(c=>c.status==='known').length;
+}
+
+const ACHIEVEMENTS=[
+  // Scanning & pages added
+  {id:'firstScan', icon:'📷', name:'First Scan', desc:'Add your first page', check:()=>(state.totalPagesAdded||0)>=1},
+  {id:'chapterBuilder', icon:'📚', name:'Chapter Builder', desc:'Add 5 pages total', check:()=>(state.totalPagesAdded||0)>=5},
+  {id:'libraryBuilder', icon:'🗂️', name:'Library Builder', desc:'Add 25 pages total', check:()=>(state.totalPagesAdded||0)>=25},
+  {id:'archivist', icon:'🏛️', name:'Archivist', desc:'Add 50 pages total', check:()=>(state.totalPagesAdded||0)>=50},
+  // Pages actually read
+  {id:'pageFinisher', icon:'📖', name:'Page Finisher', desc:'Study 10 pages total', check:()=>totalPagesRead()>=10},
+  {id:'dedicated', icon:'📗', name:'Dedicated Reader', desc:'Study 25 pages total', check:()=>totalPagesRead()>=25},
+  {id:'bookworm', icon:'🐛', name:'Bookworm', desc:'Study 50 pages total', check:()=>totalPagesRead()>=50},
+  {id:'centurion', icon:'💯', name:'Centurion', desc:'Study 100 pages total', check:()=>totalPagesRead()>=100},
+  // Whole books/chapters finished
+  {id:'firstBook', icon:'✅', name:'First Book Finished', desc:'Complete every page of one chapter', check:()=>booksCompleted()>=1},
+  {id:'trilogy', icon:'📔', name:'Trilogy', desc:'Complete 3 whole chapters', check:()=>booksCompleted()>=3},
+  // Quiz
+  {id:'quizPass', icon:'🧠', name:'Quiz Pass', desc:'Score 80% or higher', check:()=>(state.highScores&&state.highScores.quizAccuracy||0)>=80},
+  {id:'perfectScore', icon:'🎯', name:'Perfect Score', desc:'Score 100% on a quiz', check:()=>(state.highScores&&state.highScores.quizAccuracy||0)>=100},
+  // Speed
+  {id:'speedStarter', icon:'⚡', name:'Speed Starter', desc:'Reach 300 WPM', check:()=>(state.bestWpm||0)>=300},
+  {id:'speedReader', icon:'🚀', name:'Speed Reader', desc:'Reach 450 WPM', check:()=>(state.bestWpm||0)>=450},
+  {id:'lightningReader', icon:'⚡', name:'Lightning Reader', desc:'Reach 600 WPM', check:()=>(state.bestWpm||0)>=600},
+  // Streaks
+  {id:'threeDayStreak', icon:'🔥', name:'3 Day Streak', desc:'Read for 3 days', check:()=>getStreak()>=3},
+  {id:'weekStreak', icon:'🔥', name:'Week Streak', desc:'Read for 7 days straight', check:()=>getStreak()>=7},
+  {id:'monthStreak', icon:'🔥', name:'Month Streak', desc:'Read for 30 days straight', check:()=>getStreak()>=30},
+  // Words read (lifetime)
+  {id:'wordsTenK', icon:'✍️', name:'10K Words', desc:'Read 10,000 words total', check:()=>(state.wordsRead||0)>=10000},
+  {id:'wordsFiftyK', icon:'✍️', name:'50K Words', desc:'Read 50,000 words total', check:()=>(state.wordsRead||0)>=50000},
+  // Level / rank
+  {id:'levelTen', icon:'🏆', name:'Level 10', desc:'Reach Corporal rank', check:()=>state.level>=10},
+  {id:'levelTwentyFive', icon:'🎖️', name:'Level 25', desc:'Reach Major rank', check:()=>state.level>=25},
+  {id:'haloGeneral', icon:'👑', name:'Halo General', desc:'Reach level 50', check:()=>state.level>=50},
+  // Study tools
+  {id:'guideBuilder', icon:'📝', name:'Guide Builder', desc:'Build 5 Study Guides', check:()=>(state.guides||0)>=5},
+  {id:'flashMaster', icon:'🃏', name:'Flashcard Master', desc:'Mark 10 flashcards as known', check:()=>flashcardsMastered()>=10},
+  {id:'verseCollector', icon:'✝️', name:'Verse Collector', desc:'Save 5 verses to your Vault', check:()=>(state.verses||[]).length>=5},
+  // Mini-games
+  {id:'sharpMind', icon:'🧩', name:'Sharp Mind', desc:'Reach a memory span of 7 digits', check:()=>(state.highScores&&state.highScores.memorySpan||0)>=7}
+];
+
+function completeMission(id){
+  state.missions=state.missions||{};
+  if(state.missions[id]) return; // already claimed today
+  const m=MISSIONS.find(x=>x.id===id);
+  if(!m) return;
+  state.missions[id]=true;
+  state.xp=Math.max(0,state.xp+m.xp);
+  state.level=calcLevel(state.xp);
+  state.logs=state.logs||[];
+  state.logs.unshift({act:'Daily Mission: '+m.label, delta:m.xp, date:Date.now(), level:state.level});
+  state.logs=state.logs.slice(0,30);
+  save();
+}
+
+/* ============================================================
+   NAVIGATION — one function, no wrapper chains, ever.
+   Training modes are gated in a fixed order; each one needs an
+   80%+ quiz pass on the mode before it. A mode that hasn't been
+   built yet (its view doesn't exist in the DOM) is skipped in the
+   chain rather than treated as a hard block, so the lock tightens
+   naturally as Grid and RSVP get added.
+   ============================================================ */
+const MODE_ORDER=['grid','rsvp','lawn','read'];
+const MODE_LABEL={grid:'Peripheral Grid',rsvp:'RSVP Fast Reader',lawn:'Lawnmower Reading',read:'Standard Reading Test'};
+
+function isBuilt(id){ return !!document.getElementById(id); }
+
+function lockedBy(id){
+  const idx=MODE_ORDER.indexOf(id);
+  if(idx<=0) return null;
+  for(let i=idx-1;i>=0;i--){
+    const prereq=MODE_ORDER[i];
+    if(!isBuilt(prereq)) continue; // not built yet, don't block on it
+    if(!state.modePassed[prereq]) return prereq;
+    break; // nearest built prerequisite is passed, that's enough
+  }
+  return null;
+}
+
+function refreshLocks(){
+  MODE_ORDER.forEach(id=>{
+    const card=$('card'+id.charAt(0).toUpperCase()+id.slice(1));
+    if(!card) return;
+    const blocker=lockedBy(id);
+    card.classList.toggle('locked', !!blocker);
+    card.title=blocker
+      ? ('Locked until '+MODE_LABEL[blocker]+' is passed at 80%+.')
+      : (id==='grid'?'Warm-up. Always unlocked.':'Unlocked — ready to go.');
+  });
+}
+
+// Wipes only the training-mode lock progress (Grid/RSVP/Lawnmower/Reading
+// unlocks). Does not touch XP, rank, streak, library, verses, or anything
+// else -- for verifying the gate itself works from a clean state.
+function resetTrainingProgress(){
+  if(!confirm('Reset training progress? Grid, RSVP, Lawnmower, and Reading will re-lock in order. Your XP, rank, streak, and saved content are not affected.')) return;
+  state.modePassed={};
+  save();
+  refreshLocks();
+  alert('Training progress reset. RSVP, Lawnmower, and Reading are locked again until passed at 80%+, in order.');
+}
+
+
+function home(){
+  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+  $('menu').classList.remove('hidden');
+  render();
+  refreshLocks();
+}
+function openView(id){
+  if(!isBuilt(id)){ alert(MODE_LABEL[id]?MODE_LABEL[id]+' is coming in the next build pass.':'That screen is coming soon.'); return; }
+  if(MODE_ORDER.includes(id)){
+    const blocker=lockedBy(id);
+    if(blocker){ alert('Pass '+MODE_LABEL[blocker]+' at 80% or higher first.'); return; }
+  }
+  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+  const v=$(id);
+  if(v) v.classList.remove('hidden');
+  if(id==='missions') renderMissions();
+  if(id==='leader') renderLeader();
+  if(id==='flash'){
+    Flash.idx=0; Flash.flipped=false; Flash.reviewedThisPass=new Set(); Flash.filterStruggling=false;
+    if($('flashFilterBtn')) $('flashFilterBtn').textContent='Review Struggling Cards Only';
+    Flash.render();
+  }
+  if(id==='service') renderService();
+  if(id==='achievements') renderAchievements();
+  if(id==='replay') renderReplay();
+  if(id==='library') Library.render();
+  if(id==='verses') Verses.render();
+  if(id==='scan') Scanner.renderBookPicker();
+  if(id==='read') renderPagePicker('read');
+  if(id==='lawn') renderPagePicker('lawn');
+  if(id==='rsvp') renderPagePicker('rsvp');
+  if(id==='study' && state.activeChapter && $('studyText') && !$('studyText').value.trim()){
+    $('studyText').value=state.activeChapter.text||'';
+    if(state.activeChapter.title && !$('studyTitle').value.trim()) $('studyTitle').value=state.activeChapter.title;
+  }
+}
+
+/* ============================================================
+   TEXT HELPERS (shared by reading + quiz)
+   ============================================================ */
+function esc(s){ return String(s||'').replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m])); }
+function normalize(t){
+  return String(t||'')
+    .replace(/\r\n?/g,'\n').replace(/-\n\s*/g,'').replace(/\n+/g,' ')
+    .replace(/\s+/g,' ').replace(/\s+([,.;:!?])/g,'$1').trim();
+}
+function wordCount(t){ const n=normalize(t); return n?n.split(/\s+/).filter(Boolean).length:0; }
+function sentences(t){ return normalize(t).match(/[^.!?]+[.!?]+/g) || [normalize(t)]; }
+function keywords(t){
+  return [...new Set(normalize(t).toLowerCase().replace(/[^a-z\s]/g,'').split(/\s+/)
+    .filter(w=>w.length>5 && !['should','because','through','before','little','people'].includes(w)))]
+    .slice(0,12);
+}
+function people(t){
+  return [...new Set((normalize(t).match(/\b[A-Z][a-z]+\b/g)||[])
+    .filter(w=>!['The','This','That','When','Your','You','And','But','For','With','He','She','They','It','We','His','Her','Their','Its'].includes(w)))]
+    .slice(0,7);
+}
+
+const CONJ=/^(and|but|or|so|because|which|who|that|when|while|if|as|since|although|though|before|after)$/i;
+function chunkText(raw,maxWords){
+  const text=normalize(raw);
+  if(!text) return [];
+  maxWords=Math.max(4,+maxWords||7);
+  const sents=text.match(/[^.!?]+[.!?]+(?:["')\]]+)?|[^.!?]+$/g)||[text];
+  const chunks=[];
+  sents.forEach(rawSent=>{
+    const sent=rawSent.trim();
+    if(!sent) return;
+    const w=sent.split(/\s+/).filter(Boolean);
+    if(w.length<=maxWords){ chunks.push(sent); return; }
+    let buf=[]; const local=[];
+    for(let i=0;i<w.length;i++){
+      buf.push(w[i]);
+      const last=i===w.length-1;
+      const nextWord=w[i+1]?w[i+1].replace(/[^a-zA-Z]/g,''):'';
+      const endsSoft=/[,;:]$/.test(w[i]);
+      const atMax=buf.length>=maxWords;
+      const nextIsConj=nextWord&&CONJ.test(nextWord);
+      if(last){ local.push(buf.join(' ')); buf=[]; }
+      else if(atMax||(endsSoft&&buf.length>=4)||(nextIsConj&&buf.length>=4)){ local.push(buf.join(' ')); buf=[]; }
+    }
+    if(buf.length) local.push(buf.join(' '));
+    for(let i=local.length-1;i>0;i--){
+      if(local[i].split(/\s+/).length<3){ local[i-1]+=' '+local[i]; local.splice(i,1); }
+    }
+    if(local.length>1 && local[0].split(/\s+/).length<3){ local[1]=local[0]+' '+local[1]; local.shift(); }
+    chunks.push(...local);
+  });
+  return chunks;
+}
+
+/* ============================================================
+   QUIZ ENGINE — one implementation, used by every reading mode.
+   ============================================================ */
+// Single source of truth for "load this text into every reading mode."
+// Used anywhere the Active Chapter changes (Scanner, Study Guide, Library)
+// so RSVP — or any reading mode added later — can't accidentally get left
+// out the way it was before.
+function fillReadingFields(text,title){
+  if($('readText')) $('readText').value=text;
+  if($('lawnText')) $('lawnText').value=text;
+  if($('rsvpText')) $('rsvpText').value=text;
+  if($('studyText')) $('studyText').value=text;
+  if(title && $('studyTitle')) $('studyTitle').value=title;
+  // New or changed content means any in-progress session is now stale --
+  // clear it so Reading/Lawnmower/RSVP always start fresh against the new
+  // text instead of silently continuing an old timer/position.
+  if(typeof Reader!=='undefined'){ Reader.stop('read'); Reader.stop('lawn'); }
+  if(typeof Rsvp!=='undefined'){ Rsvp.stop(); }
+  refreshActiveChapterBanner();
+}
+
+// Global on purpose -- this needs to protect the quiz engine too, not
+// just the Scanner pipeline, since text can reach the quiz by being
+// typed, pasted, or loaded from an old Active Chapter, not only scanned.
+// Deliberately conservative: only strips the "Chapter N" number itself,
+// which is unambiguous. An earlier version tried to also guess where a
+// chapter *title* ended, using capitalization -- but real sentences also
+// start with capital letters, so it sometimes swallowed genuine content
+// (verified directly before this simpler version replaced it). When a
+// title has its own punctuation ("Chapter 3: A New Hope.") it separates
+// cleanly on its own; when it doesn't, it stays attached to the next
+// sentence rather than risk corrupting real text.
+function stripLeadingChapterHeading(text){
+  const t=String(text||'');
+  const m=t.match(/^\s*Chapter\s+([0-9]+|[IVXLCDM]+|One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Eleven|Twelve)\b\s*[:.\-–—]?\s*/i);
+  if(!m || m.index!==0) return t;
+  return t.slice(m[0].length).trim();
+}
+
+// Catches a bare title with no "Chapter N" in front of it (e.g. a title
+// printed on its own line that got glued straight onto the body text,
+// like "DO IT AFRAID for years and suddenly..."). Requires at least 2
+// consecutive genuine ALL-CAPS words -- real sentences essentially never
+// have that at the very start, so this is safe: it won't touch "I AM
+// going to..." (too short) or "MOSES was a great leader" (only 1 word).
+function stripLeadingAllCapsHeading(text){
+  const t=String(text||'');
+  const words=t.split(/\s+/);
+  let i=0;
+  while(i<words.length && i<6){
+    const w=words[i].replace(/[^A-Za-z]/g,'');
+    if(w.length>=2 && w===w.toUpperCase() && w!==w.toLowerCase()){ i++; }
+    else break;
+  }
+  if(i<2) return t;
+  return words.slice(i).join(' ').trim();
+}
+
+function stripHeadingNoise(text){
+  return stripLeadingAllCapsHeading(stripLeadingChapterHeading(String(text||'')));
+}
+
+const Quiz={
+  build(text){
+    text=stripHeadingNoise(String(text||'').trim());
+    const ss=sentences(text), kw=keywords(text), pool=[];
+    // Prefer substantial sentences (6+ words) as answer candidates. Short
+    // fragments like "Have I not commanded you?" make poor "main idea" or
+    // "supported statement" answers even when they're technically the
+    // first sentence -- a real, complete sentence a few lines later is
+    // almost always the better pick.
+    const substantial=ss.filter(s=>s.trim().split(/\s+/).length>=6);
+    const ssGood=substantial.length?substantial:ss;
+    const pick=arr=>arr.length?arr[Math.floor(Math.random()*arr.length)]:null;
+
+    // Randomized among viable candidates, not always the same sentence --
+    // otherwise retrying the same passage produces an identical quiz every
+    // time, which is exactly what felt broken about this before. Main
+    // idea stays weighted toward the first half (that's genuinely where
+    // main ideas tend to live), takeaway toward the second half, but
+    // which specific sentence gets used now varies.
+    const mainCandidates=ssGood.slice(0,Math.max(1,Math.ceil(ssGood.length/2)));
+    const main=pick(mainCandidates)||text.slice(0,150)||'The main idea of the reading.';
+    // \b word boundaries here on purpose -- without them "command" was
+    // matching inside "commanded", pulling in sentences that only
+    // accidentally contained the substring.
+    const supportMatches=ssGood.filter(s=>/\b(because|therefore|so that|means|shows|teaches|told|said|command|should|must)\b/i.test(s));
+    const supportPool=supportMatches.length?supportMatches:ssGood.filter(s=>s.trim()!==main.trim());
+    const support=pick(supportPool)||main;
+    const endCandidates=ssGood.slice(Math.floor(ssGood.length/2));
+    const ending=pick(endCandidates)||main;
+
+    function add(cat,q,correct,wrong,explain){
+      correct=String(correct||'').trim();
+      if(!correct) return;
+      // Trim every candidate the same way, not just `correct` -- sentences
+      // pulled straight from the sentence-splitter often carry a leading
+      // space, so the same sentence used as both the correct answer and a
+      // distractor would otherwise look identical on screen but compare
+      // as two different strings, breaking both dedup and the index match.
+      let opts=[correct,...wrong.filter(Boolean).map(w=>String(w).trim())];
+      const seen=new Set(); opts=opts.filter(o=>{const k=o.toLowerCase().slice(0,60); if(seen.has(k))return false; seen.add(k); return true;}).slice(0,4);
+      // Word-shaped fallback for the keyword/fill-blank questions
+      // specifically -- the old shared generic list was full sentences,
+      // which looked broken sitting next to a single-word correct answer
+      // on a short passage with few real candidates.
+      const wordShaped=cat==='keyword'||cat==='fillBlank';
+      const generic=wordShaped
+        ? ['a minor detail','an unrelated topic','a word not used here']
+        : ['This is not supported by the reading.','This is the opposite of the reading.','This is a random detail, not the answer.'];
+      let gi=0; while(opts.length<4) opts.push(generic[gi++%generic.length]);
+      opts=opts.sort(()=>Math.random()-.5);
+      pool.push({q, options:opts, a:opts.indexOf(correct), cat, explain});
+    }
+    const otherSentences=(exclude)=>ssGood.filter(s=>s.trim()!==exclude.trim());
+    add('mainIdea', 'What is this reading mostly about?', main, [...otherSentences(main).slice(0,2), 'The reading is mostly about something unrelated.'],
+      'The main idea is usually the sentence that best summarizes what the passage is really about.');
+    add('support', 'Which sentence below was actually written in the passage?', support, [...otherSentences(support).slice(0,2), 'The author says the opposite of this.'],
+      'This is stated directly in the passage, not just implied.');
+    add('takeaway', 'What is one thing you should remember from this reading?', ending, [...otherSentences(ending).slice(0,2), 'Ignore this after reading.'],
+      'A takeaway is something worth remembering or applying after reading.');
+    if(kw.length){
+      const kwPoolSize=Math.min(kw.length,3);
+      const kwIdx=Math.floor(Math.random()*kwPoolSize);
+      const chosenKw=kw[kwIdx];
+      const kwDistractors=kw.filter((_,i)=>i!==kwIdx);
+      add('keyword', 'Which of these words actually appeared in the reading?', chosenKw, kwDistractors,
+        'This word or idea comes up as central to understanding the passage.');
+    }
+    // Fill-in-the-blank -- a genuinely different question format (recall,
+    // not just recognition), with distractors pulled from the passage's
+    // own other keywords instead of static placeholder words.
+    const blankCandidates=ssGood.filter(s=>s.split(/\s+/).some(w=>w.replace(/[^a-zA-Z]/g,'').length>5));
+    const blankSentence=pick(blankCandidates);
+    if(blankSentence){
+      const words=blankSentence.split(/\s+/);
+      const longWordIdx=words.findIndex(w=>w.replace(/[^a-zA-Z]/g,'').length>5);
+      if(longWordIdx!==-1){
+        const missingWord=words[longWordIdx].replace(/^[^a-zA-Z]+|[^a-zA-Z]+$/g,'');
+        const blanked=words.map((w,i)=>i===longWordIdx?'_____':w).join(' ');
+        const wordDistractors=kw.filter(k=>k.toLowerCase()!==missingWord.toLowerCase());
+        add('fillBlank', 'Fill in the blank: "'+blanked+'"', missingWord, wordDistractors,
+          'This word completes the sentence exactly as it appeared in the passage.');
+      }
+    }
+    // Shuffle which question TYPES show up, not just which sentence fills
+    // each one -- so retrying the same passage can genuinely give you a
+    // different mix of questions, not just the same four in the same
+    // order with different wording.
+    return pool.sort(()=>Math.random()-.5).slice(0,4);
+  },
+  async render(container, text, wpm, mode){
+    container.classList.remove('hidden');
+    container.innerHTML='<h2 style="color:var(--primary)">Understanding Check</h2>'
+      +'<p class="tiny">🤖 Writing your questions...</p>';
+    let qs;
+    try{
+      qs=await AI.generateQuiz(text);
+    }catch(e){
+      qs=this.build(text); // fallback: original local quiz, unchanged
+    }
+    this.session={qs, idx:0, correct:0, wpm, mode, text, container, picked:-1};
+    this.renderQuestion();
+  },
+
+  CATEGORY_LABELS:{mainIdea:'Main Idea',support:'Supporting Detail',takeaway:'Takeaway',keyword:'Key Word',fillBlank:'Fill in the Blank'},
+
+  renderQuestion(){
+    const s=this.session;
+    const q=s.qs[s.idx];
+    const acc=s.idx>0?Math.round(s.correct/s.idx*100):100;
+    s.picked=-1;
+    const voiceSupported=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
+    const pillLabel=this.CATEGORY_LABELS[q.cat]||'';
+    s.container.innerHTML='<h2 style="color:var(--primary)">Understanding Check</h2>'
+      +'<div class="branch-card"><div class="grid2">'
+        +'<div class="stat" style="margin:0"><small>QUESTION</small><b>'+(s.idx+1)+'/'+s.qs.length+'</b></div>'
+        +'<div class="stat" style="margin:0"><small>ACCURACY</small><b id="qzLiveAcc">'+acc+'%</b></div>'
+      +'</div></div>'
+      +'<div class="branch-card">'
+        +(pillLabel?'<span style="display:inline-block;background:rgba(56,189,248,.15);color:var(--primary);border:1px solid var(--primary);border-radius:999px;padding:2px 10px;font-size:11px;font-weight:800;margin-bottom:8px">'+esc(pillLabel)+'</span>':'')
+        +'<h3>'+esc(q.q)+'</h3>'
+        +'<div id="qzOptions">'+q.options.map((o,j)=>'<button type="button" onclick="Quiz.answer('+j+')" style="text-align:left;display:block;width:100%;margin:8px 0">'+(j+1)+'. '+esc(o)+'</button>').join('')+'</div>'
+        +(voiceSupported?'<button type="button" id="qzVoiceBtn" onclick="Quiz.startVoiceAnswer()" style="margin-top:10px">🎤 Speak Your Answer (say "one", "two", "three", or "four")</button>':'')
+        +'<p id="qzExplain" class="tiny" style="margin-top:10px;color:var(--muted)"></p>'
+      +'</div>'
+      +'<button class="green hidden" id="qzNext" onclick="Quiz.nextQuestion()">'+((s.idx+1>=s.qs.length)?'See Results':'Next Question')+'</button>';
+  },
+
+  startVoiceAnswer(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR) return;
+    const btn=$('qzVoiceBtn');
+    const rec=new SR();
+    rec.lang='en-US';
+    rec.interimResults=false;
+    rec.maxAlternatives=3;
+    if(btn){ btn.disabled=true; btn.textContent='🎤 Listening...'; }
+    const numberWords={one:0,first:0,1:0,two:1,second:1,2:1,three:2,third:2,3:2,four:3,fourth:3,4:3};
+    rec.onresult=(ev)=>{
+      const said=(ev.results[0][0].transcript||'').toLowerCase().trim();
+      const words=said.split(/\s+/);
+      let matched=null;
+      for(const w of words){
+        const clean=w.replace(/[^a-z0-9]/g,'');
+        if(numberWords[clean]!==undefined){ matched=numberWords[clean]; break; }
+      }
+      if(matched!==null){
+        this.answer(matched);
+      }else if(btn){
+        btn.textContent='Didn\'t catch a number 1-4 — tap to try again';
+      }
+    };
+    rec.onerror=()=>{ if(btn){ btn.disabled=false; btn.textContent='🎤 Speak Your Answer (say "one", "two", "three", or "four")'; } };
+    rec.onend=()=>{ if(btn&&!btn.disabled){ /* result already handled */ } else if(btn){ btn.disabled=false; } };
+    rec.start();
+  },
+
+  answer(j){
+    const s=this.session;
+    if(s.picked!==-1) return;
+    s.picked=j;
+    const q=s.qs[s.idx];
+    const buttons=s.container.querySelectorAll('#qzOptions button');
+    buttons.forEach(b=>b.disabled=true);
+    const wasRight=(j===q.a);
+    if(wasRight){
+      buttons[j].classList.add('green');
+      s.correct++;
+    }else{
+      buttons[j].classList.add('danger');
+      buttons[q.a].style.borderColor='var(--green)';
+      buttons[q.a].style.color='var(--green)';
+    }
+    if(q.cat){
+      state.categoryStats=state.categoryStats||{};
+      const c=state.categoryStats[q.cat]=state.categoryStats[q.cat]||{correct:0,total:0};
+      c.total++;
+      if(wasRight) c.correct++;
+    }
+    const explainEl=s.container.querySelector('#qzExplain');
+    if(explainEl && q.explain){
+      explainEl.innerHTML=(wasRight?'✅ ':'❌ ')+esc(q.explain);
+      explainEl.style.color=wasRight?'var(--green)':'var(--muted)';
+    }
+    const accEl=s.container.querySelector('#qzLiveAcc');
+    if(accEl) accEl.textContent=Math.round(s.correct/(s.idx+1)*100)+'%';
+    const nextBtn=s.container.querySelector('#qzNext');
+    if(nextBtn) nextBtn.classList.remove('hidden');
+  },
+
+  nextQuestion(){
+    const s=this.session;
+    s.idx++;
+    if(s.idx>=s.qs.length){ this.finishQuiz(); return; }
+    this.renderQuestion();
+  },
+
+  finishQuiz(){
+    const s=this.session;
+    const qs=s.qs, correct=s.correct, wpm=s.wpm, mode=s.mode, text=s.text, container=s.container;
+    const acc=Math.round(correct/qs.length*100);
+    const passed=acc>=80;
+    // Miss questions and two things happen: XP goes negative, and the WPM
+    // you actually get credit for is knocked down in proportion to how many
+    // you missed. A fast read that you didn't understand isn't a fast read.
+    const recordedWpm=passed?wpm:Math.max(1,Math.round(wpm*(acc/100)));
+    const delta=passed?Math.max(10,Math.round(recordedWpm*(acc/100))):-Math.max(5,Math.round(wpm*(1-acc/100)));
+
+    state.bestWpm=Math.max(state.bestWpm||0,recordedWpm);
+    state.wordsRead=(state.wordsRead||0)+wordCount(text);
+
+    // Session length isn't tracked as its own value elsewhere, but it's
+    // fully recoverable from words-per-minute and word count, so no new
+    // parameter needs threading through the whole call chain for this.
+    const sessionSeconds=wordCount(text)/wpm*60;
+    state.sessionDurations=state.sessionDurations||[];
+    state.sessionDurations.push(sessionSeconds);
+    if(state.sessionDurations.length>50) state.sessionDurations.shift();
+
+    const dayKey=today();
+    state.dailyWordsRead=state.dailyWordsRead||{};
+    state.dailyWordsRead[dayKey]=(state.dailyWordsRead[dayKey]||0)+wordCount(text);
+
+    const key=mode==='lawn'?'lawnWpm':mode==='rsvp'?'rsvpWpm':'regularWpm';
+    newBest(key,recordedWpm,mode==='lawn'?'Lawnmower WPM':'Reading WPM');
+    newBest('quizAccuracy',acc,'Quiz Accuracy');
+    if(passed){ state.modePassed=state.modePassed||{}; state.modePassed[mode]=true; completeMission('quiz'); }
+
+    const coachNotes=this.buildCoachNotes(recordedWpm, passed);
+    state.wpmHistory=state.wpmHistory||[];
+    state.wpmHistory.push({wpm:recordedWpm,date:Date.now(),mode,acc});
+    if(state.wpmHistory.length>30) state.wpmHistory.shift();
+
+    save();
+    addXp(delta, (mode==='lawn'?'Lawnmower':'Reading')+' Quiz '+acc+'%');
+
+    const wpmNote=passed?('WPM saved: <b>'+recordedWpm+'</b>')
+      :('You read at '+wpm+' WPM, but missed questions bring your recorded speed down to <b>'+recordedWpm+' WPM</b>. Score 80%+ to pass and unlock the next mode.');
+    container.innerHTML='<h2 style="color:var(--gold);text-align:center;letter-spacing:1px">'+(passed?'MISSION COMPLETE':'MISSION INCOMPLETE')+'</h2>'
+      +'<div class="subtitle" style="text-align:center">COMPREHENSION REPORT</div>'
+      +'<div class="branch-card"><div class="grid2">'
+        +'<div class="stat" style="margin:0"><small>SCORE</small><b>'+correct+'/'+qs.length+' ('+acc+'%)</b></div>'
+        +'<div class="stat" style="margin:0"><small>XP EARNED</small><b style="color:'+(delta>=0?'var(--green)':'var(--danger)')+'">'+(delta>=0?'+':'')+delta+'</b></div>'
+      +'</div><p class="tiny" style="margin-top:10px">'+wpmNote+'</p></div>'
+      +'<div class="branch-card"><h3 style="margin:0 0 8px">🎯 Coach Notes</h3>'
+        +coachNotes.map(n=>'<p class="tiny" style="margin:6px 0">'+n+'</p>').join('')
+      +'</div>'
+      +'<button class="green" id="qzRetry">Retry This Quiz</button>'
+      +'<button onclick="home()">Back to Hub</button>';
+    container.querySelector('#qzRetry').onclick=()=>Quiz.render(container,text,wpm,mode);
+  },
+
+  // Not AI -- this is real tracked history (which question types you
+  // actually get wrong, your recent WPM trend) turned into plain-language
+  // notes. Honest about what it is: pattern tracking, not understanding.
+  buildCoachNotes(wpm, passed){
+    const notes=[];
+    const cs=state.categoryStats||{};
+    const labels={mainIdea:'finding the main idea', support:'spotting directly-supported details', takeaway:'pulling out a good takeaway', keyword:'catching the key word or idea', fillBlank:'recalling exact wording'};
+    let weakest=null, weakestAcc=101;
+    Object.keys(cs).forEach(cat=>{
+      const c=cs[cat];
+      if(c.total>=3){
+        const catAcc=Math.round(c.correct/c.total*100);
+        if(catAcc<weakestAcc){ weakestAcc=catAcc; weakest=cat; }
+      }
+    });
+    if(weakest && weakestAcc<75){
+      notes.push('You\'re at <b>'+weakestAcc+'%</b> on questions about '+(labels[weakest]||weakest)+' — that\'s your weakest spot right now. Slow down on that part before answering.');
+    }
+    const hist=(state.wpmHistory||[]).map(v=>typeof v==='object'?v.wpm:v);
+    if(hist.length>=2){
+      const prev=hist[hist.length-1];
+      if(wpm>prev+15) notes.push('Speed is climbing — up from '+prev+' to '+wpm+' WPM last time.');
+      else if(wpm<prev-25) notes.push('Speed dropped this time ('+prev+' → '+wpm+' WPM). Not a red flag on its own, but worth noticing if it keeps happening.');
+    }
+    if(!notes.length){
+      notes.push(passed?'Solid, consistent performance — no clear weak spot showing up in your history yet.':'Not enough quiz history yet to spot a real pattern. Keep going and this gets more specific.');
+    }
+    return notes;
+  }
+};
+
+/* ============================================================
+   READER ENGINE — shared by Standard Reading and Lawnmower.
+   Standard: plain scrolling text, simple timer/WPM.
+   Lawnmower: fixed no-scroll box, centered current+next chunk,
+   paced auto-advance, tap-to-advance. Both feed the same Quiz.
+   ============================================================ */
+const Reader={
+  sessions:{},
+
+  loadActive(mode){
+    if(!state.activeChapter || !state.activeChapter.text){ alert('No Active Chapter yet — scan a page, build a Study Guide, or load something from your Library first.'); return; }
+    this.stop(mode);
+    $(mode==='lawn'?'lawnText':'readText').value=state.activeChapter.text;
+  },
+
+  start(mode){
+   try{
+    const ta=$(mode==='lawn'?'lawnText':'readText');
+    const text=ta?ta.value.trim():'';
+    if(!text){ alert('Paste reading text first.'); return; }
+    const s={
+      mode, text, total:wordCount(text),
+      start:Date.now(), elapsed:0, paused:false, tick:null,
+      chunks: mode==='lawn' ? chunkText(text, $('lawnSize')?$('lawnSize').value:7) : null
+    };
+    this.sessions[mode]=s;
+    if(!state.activeChapter || state.activeChapter.text!==text){
+      state.activeChapter={title:'Reading',text,date:Date.now()};
+    }
+
+    $(mode==='lawn'?'finishLawnBtn':'finishReadBtn').classList.remove('hidden');
+    $(mode==='lawn'?'pauseLawnBtn':'pauseReadBtn').classList.remove('hidden');
+    $(mode==='lawn'?'pauseLawnBtn':'pauseReadBtn').textContent='Pause';
+    $(mode==='lawn'?'lawnTimer':'readTimer').classList.remove('hidden');
+    $(mode==='lawn'?'lawnWpmLive':'readWpmLive').classList.remove('hidden');
+    $(mode==='lawn'?'quizLawn':'quizRead').classList.add('hidden');
+
+    if(mode==='lawn'){ this.renderLawn(s); }
+    else { this.renderRead(s); }
+
+    this.updateStats(s);
+    s.tick=setInterval(()=>this.updateStats(s),150);
+   }catch(e){
+    console.error('Reader.start failed:',e);
+    alert('Something broke starting this reader: '+(e&&e.message?e.message:e)+'. Please screenshot this exact message.');
+   }
+  },
+
+  pause(mode){
+    const s=this.sessions[mode];
+    if(!s) return;
+    s.paused=!s.paused;
+    const label=s.paused?'Resume':'Pause';
+    const btn=$(mode==='lawn'?'pauseLawnBtn':'pauseReadBtn');
+    if(btn) btn.textContent=label;
+    if(s.paused){
+      s.elapsed+=(Date.now()-s.start)/1000;
+    }else{
+      s.start=Date.now();
+    }
+  },
+
+  // Clears a session's timers without grading it. Used when the person
+  // backs out of Reading/Lawnmower mid-session instead of finishing.
+  stop(mode){
+    const s=this.sessions[mode];
+    if(!s) return;
+    clearInterval(s.tick);
+    clearTimeout(s.auto);
+    this.sessions[mode]=null;
+    $(mode==='lawn'?'finishLawnBtn':'finishReadBtn').classList.add('hidden');
+    $(mode==='lawn'?'pauseLawnBtn':'pauseReadBtn').classList.add('hidden');
+  },
+
+  seconds(s){ return Math.max(.1, s.elapsed + (s.paused?0:(Date.now()-s.start)/1000)); },
+
+  updateStats(s){
+    const sec=this.seconds(s);
+    const wpm=Math.round(s.total/(sec/60));
+    const tid=s.mode==='lawn'?'lawnTime':'readTime', wid=s.mode==='lawn'?'lawnLiveWpm':'readLiveWpm';
+    if($(tid)) $(tid).textContent=sec.toFixed(1)+'s';
+    if($(wid)) $(wid).textContent=isFinite(wpm)?wpm:0;
+  },
+
+  renderRead(s){
+    const box=$('reading');
+    box.classList.remove('hidden');
+    const guided=$('guidedModeToggle')&&$('guidedModeToggle').checked;
+    if(!guided){
+      $('guidedNav').classList.add('hidden');
+      box.textContent=normalize(s.text);
+      return;
+    }
+    if(!s.guidedLines){
+      s.guidedLines=sentences(s.text);
+      s.guidedIdx=0;
+    }
+    $('guidedNav').classList.remove('hidden');
+    box.innerHTML=s.guidedLines.map((line,i)=>
+      '<p style="margin:10px 0;'
+        +(i===s.guidedIdx?'opacity:1;background:rgba(56,189,248,.12);border-left:3px solid var(--primary);padding:8px 10px;border-radius:6px;font-weight:600'
+                          :'opacity:.32')
+        +'">'+esc(line)+'</p>'
+    ).join('');
+    // Computed directly instead of scrollIntoView -- that let the browser
+    // choose which scrollable container to move, and it sometimes picked
+    // the whole page instead of just this box depending on how tall a
+    // given line was, causing an inconsistent "bounce." This confines the
+    // scroll to just the reading box itself, every time.
+    const current=box.children[s.guidedIdx];
+    if(current){
+      const target=current.offsetTop-(box.clientHeight/2)+(current.offsetHeight/2);
+      box.scrollTop=Math.max(0,target);
+    }
+  },
+
+  guidedStep(dir){
+    const s=this.sessions.read;
+    if(!s||!s.guidedLines) return;
+    s.guidedIdx=Math.max(0,Math.min(s.guidedLines.length-1,s.guidedIdx+dir));
+    this.renderRead(s);
+  },
+
+  renderLawn(s){
+    const box=$('lawnReading');
+    box.classList.remove('hidden');
+    if(!s.chunks.length){
+      box.textContent='Nothing to read.';
+      return;
+    }
+    // Real lawnmower/boustrophedon mode reverses the word order on every
+    // other line, so your eyes can drop straight down from the end of one
+    // line and keep reading right-to-left without a return sweep to the
+    // margin. Each word (punctuation attached) stays intact -- only the
+    // order of whole words changes, never letters or word boundaries.
+    // Shown as one continuous page, same as Standard Reading, just with
+    // this alternating rail baked into every line.
+    const dir=i=>i%2===0?'left':'right';
+    const display=(i,text)=>dir(i)==='right' ? text.trim().split(/\s+/).reverse().join(' ') : text;
+    const rail=i=>{
+      const d=dir(i);
+      return d==='left'
+        ? '<div class="lmwRail"><span class="dot"></span><span class="bar"></span><span class="arrow">→</span></div>'
+        : '<div class="lmwRail"><span class="arrow">←</span><span class="bar"></span><span class="dot"></span></div>';
+    };
+    box.innerHTML=s.chunks.map((c,i)=>
+      '<div class="lmwLine" style="text-align:'+dir(i)+'">'+esc(display(i,c))+rail(i)+'</div>'
+    ).join('');
+  },
+
+  finish(mode){
+    const s=this.sessions[mode];
+    if(!s){ alert('Start first.'); return; }
+    const sec=this.seconds(s);
+    // 1500 WPM is already far beyond any real human reading speed. If the
+    // elapsed time is less than what even that pace would need, this
+    // wasn't a real read -- Finish got tapped right after Start. Reject
+    // it instead of recording an impossible number as a "best."
+    const MAX_PLAUSIBLE_WPM=1500;
+    const minSeconds=Math.max(2,(s.total/MAX_PLAUSIBLE_WPM)*60);
+    if(sec<minSeconds){
+      alert('That finished too fast to be a real reading time ('+sec.toFixed(1)+'s for '+s.total+' words). Nothing was recorded — keep reading and try Finish again when you\'re actually done.');
+      return;
+    }
+    clearInterval(s.tick);
+    clearTimeout(s.auto);
+    const wpm=Math.max(1,Math.round(s.total/(sec/60)));
+    $(mode==='lawn'?'finishLawnBtn':'finishReadBtn').classList.add('hidden');
+    $(mode==='lawn'?'pauseLawnBtn':'pauseReadBtn').classList.add('hidden');
+    completeMission('read');
+    markChapterProgress();
+    Quiz.render($(mode==='lawn'?'quizLawn':'quizRead'), s.text, wpm, mode);
+  }
+};
+
+/* ============================================================
+   SCANNER — camera/gallery photo → OCR (Tesseract) → cleaned
+   text → Active Chapter. Multi-page batches, one clean pass.
+   No text is ever generated from memory; every word comes from
+   your own photo.
+   ============================================================ */
+const Scanner={
+  pages:[],
+  busy:false,
+  startPage:null,
+  autoPagesField:true,
+  groupId:null,
+  batchTitle:null,
+
+  // Explicit choice instead of guessing. Every book already scanned shows
+  // up here by name; picking one rehydrates its pages so the next one
+  // added continues the sequence correctly instead of overwriting it.
+  // Picking "Start a New Book" clears everything for a fresh start. This
+  // replaces trying to detect a mismatch after the fact.
+  renderBookPicker(){
+    const sel=$('scanBookPicker');
+    if(!sel) return;
+    const cp=state.chapterProgress||{};
+    const books=Object.keys(cp).filter(gid=>cp[gid].pageCount>0).map(gid=>({gid, title:cp[gid].title||'Untitled', pageCount:cp[gid].pageCount}));
+    sel.innerHTML='<option value="__new__">+ Start a New Book</option>'
+      +books.map(b=>'<option value="'+b.gid+'"'+(this.groupId===b.gid?' selected':'')+'>'+esc(b.title)+' ('+b.pageCount+' page'+(b.pageCount===1?'':'s')+')</option>').join('');
+    sel.value=this.groupId&&cp[this.groupId]?this.groupId:'__new__';
+    const delBtn=$('deleteBookBtn');
+    if(delBtn) delBtn.classList.toggle('hidden', sel.value==='__new__');
+  },
+
+  selectBook(value){
+    const delBtn=$('deleteBookBtn');
+    if(value==='__new__'){
+      this.pages=[]; this.startPage=null; this.autoPagesField=true; this.groupId=null; this.batchTitle=null;
+      if($('scanChapter')) $('scanChapter').value='';
+      if($('scanPagesField')) $('scanPagesField').value='';
+      if($('scanTitle')) $('scanTitle').value='';
+      if($('scanAuthor')) $('scanAuthor').value='';
+      if(delBtn) delBtn.classList.add('hidden');
+      this.renderPages();
+      return;
+    }
+    const prog=state.chapterProgress&&state.chapterProgress[value];
+    if(!prog) return;
+    if(delBtn) delBtn.classList.remove('hidden');
+    const entries=(state.library||[]).filter(x=>x.groupId===value&&x.type==='scanned chapter'&&typeof x.pageIndex==='number').sort((a,b)=>a.pageIndex-b.pageIndex);
+    this.pages=entries.map(e=>({text:e.text, addedDate:e.date}));
+    this.groupId=value;
+    this.batchTitle=prog.title;
+    this.startPage=null;
+    this.autoPagesField=true;
+    if($('scanTitle')) $('scanTitle').value=prog.title;
+    if($('scanAuthor')) $('scanAuthor').value=prog.author||'';
+    if($('scanChapter')) $('scanChapter').value=(entries[0]&&entries[0].chapter)||'';
+    if($('scanPagesField')) $('scanPagesField').value='';
+    this.renderPages();
+  },
+
+  // Removes every page, study guide, and progress record tied to this
+  // book -- not just one entry at a time like deleting from the Library
+  // view. Confirms first since this can't be undone.
+  deleteBook(){
+    const gid=this.groupId;
+    if(!gid){ alert('No book selected.'); return; }
+    const prog=state.chapterProgress&&state.chapterProgress[gid];
+    const title=(prog&&prog.title)||'this book';
+    const count=(state.library||[]).filter(x=>x.groupId===gid).length;
+    if(!confirm('Delete "'+title+'" completely? This removes all '+count+' saved item(s) for it (scanned pages and any Study Guide) and can\'t be undone.')) return;
+    state.library=(state.library||[]).filter(x=>x.groupId!==gid);
+    if(state.chapterProgress) delete state.chapterProgress[gid];
+    if(state.activeChapter&&state.activeChapter.groupId===gid){
+      state.activeChapter=null;
+      if($('readText')) $('readText').value='';
+      if($('lawnText')) $('lawnText').value='';
+      if($('rsvpText')) $('rsvpText').value='';
+    }
+    this.selectBook('__new__');
+    save();
+    this.renderBookPicker();
+    refreshActiveChapterBanner();
+    alert('"'+title+'" deleted.');
+  },
+
+  cleanOcr(raw){
+    let t=String(raw||'').replace(/\r\n?/g,'\n');
+    t=t.replace(/([a-z])-\n([a-z])/g,'$1$2');
+    t=t.replace(/\n{2,}/g,'\u0000P\u0000');
+    t=t.replace(/\n/g,' ');
+    t=t.replace(/\u0000P\u0000/g,'\n\n');
+    t=t.replace(/[ \t]+/g,' ');
+    t=t.replace(/\s+([,.;:!?])/g,'$1');
+    return t.split('\n\n').map(p=>p.trim()).filter(Boolean).join('\n\n').trim();
+  },
+
+  setStatus(msg){ if($('scanStatus')) $('scanStatus').textContent=msg; },
+  setBar(pct){ if($('scanBar')) $('scanBar').style.width=Math.max(0,Math.min(100,pct))+'%'; },
+
+  async waitForTesseract(){
+    if(typeof Tesseract!=='undefined') return true;
+    this.setStatus('Loading scanner engine (needs internet the first time)...');
+    for(let i=0;i<16;i++){
+      await new Promise(r=>setTimeout(r,500));
+      if(typeof Tesseract!=='undefined') return true;
+    }
+    return false;
+  },
+
+  async runOcr(file){
+    const ready=await this.waitForTesseract();
+    if(!ready){
+      this.setStatus('Scanner engine did not load — check your internet connection and try again. You can still type the page in manually.');
+      alert('The scanner engine could not load. Check your internet connection and try again, or type the page in manually.');
+      return null;
+    }
+    this.setBar(0); this.setStatus('Reading text...');
+    // No custom preprocessing here on purpose. Tesseract's own internal
+    // pipeline (Leptonica) does adaptive binarization far better than a
+    // hand-rolled canvas filter can, and two rounds of custom preprocessing
+    // both made real photos worse, not better. Passing the raw photo
+    // straight through gave Tesseract the best shot at it.
+    try{
+      const result=await Tesseract.recognize(file,'eng',{
+        logger:m=>{ if(m.status) this.setStatus('OCR: '+m.status+(m.progress?' '+Math.round(m.progress*100)+'%':'')); if(m.progress) this.setBar(m.progress*100); }
+      });
+      let text=this.cleanOcr((result&&result.data&&result.data.text)||'');
+      this.setBar(100);
+      if(text.length>=40){
+        this.setStatus('Scan complete. 🤖 Cleaning up scan errors...');
+        try{
+          text=await AI.cleanupOcr(text);
+          this.setStatus('Scan complete and cleaned up. Check the text, then scan the next page or save.');
+        }catch(e){
+          // AI cleanup failed or offline -- keep the raw local-cleaned OCR text, same as before.
+          this.setStatus('Scan complete. Check the text, then scan the next page or save.');
+        }
+      }else{
+        this.setStatus('Scan looks weak — check lighting/focus, or edit the text by hand below.');
+      }
+      return text;
+    }catch(e){
+      console.error(e);
+      this.setStatus('Scan failed. Try a clearer photo, better light, or type the page manually.');
+      return null;
+    }
+  },
+
+  pageWords(t){ return String(t||'').trim()?wordCount(t):0; },
+  combined(){ return this.pages.map(p=>p.text.trim()).filter(Boolean).join('\n\n'); },
+
+  renderPages(){
+    const box=$('scanPages');
+    if(!box) return;
+    if(!this.pages.length){
+      box.innerHTML='<p class="tiny">No pages scanned yet.</p>';
+    }else{
+      box.innerHTML=this.pages.map((p,i)=>{
+        const words=this.pageWords(p.text);
+        const when=p.addedDate?new Date(p.addedDate).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):null;
+        return '<div class="scanPageCard"><h4>Page '+(i+1)+'</h4>'
+          +'<p class="tiny" style="color:var(--muted);margin:2px 0 8px">'+words+' words'+(when?' • added '+esc(when):'')+'</p>'
+          +'<textarea oninput="Scanner.editPage('+i+',this.value)">'+esc(p.text)+'</textarea>'
+          +'<div class="scanPageBtns">'
+            +'<button onclick="Scanner.rescan('+i+')">Rescan This Page</button>'
+            +'<button class="danger" onclick="Scanner.deletePage('+i+')">Delete Page</button>'
+          +'</div>'
+          +'<button onclick="Scanner.loadOnePage('+i+')">Use Just This Page (not the whole chapter)</button>'
+          +'</div>';
+      }).join('');
+    }
+    const words=this.pageWords(this.combined());
+    if($('scanSummary')) $('scanSummary').innerHTML='<b style="color:var(--green)">'+this.pages.length+'</b> page'+(this.pages.length===1?'':'s')+' scanned &nbsp;|&nbsp; <b style="color:var(--green)">'+words+'</b> words total';
+  },
+
+  // Sets a single page as the Active Chapter, instead of Save All Pages'
+  // behavior of combining everything scanned so far.
+  // Strips any "— Chapter X — Page N" or "— N" suffix that may already be
+  // sitting on the title (from an earlier press of this same button)
+  // before building a new one. Without this, repeated use kept stacking
+  // suffixes on top of each other indefinitely.
+  cleanBaseTitle(t){
+    t=String(t||'');
+    let prev;
+    do{
+      prev=t;
+      t=t.replace(/\s*—\s*(?:[^—]*?\s*—\s*)?Page\s*\d+\s*$/i,'').trim();
+      t=t.replace(/\s*—\s*\d+\s*$/,'').trim();
+    }while(t!==prev && t.length);
+    return t||'Scanned Page';
+  },
+
+  loadOnePage(i){
+    const p=this.pages[i];
+    if(!p||!p.text.trim()){ alert('This page is empty.'); return; }
+    const baseTitle=this.cleanBaseTitle(($('scanTitle')&&$('scanTitle').value.trim())||'Scanned Page');
+    const author=($('scanAuthor')&&$('scanAuthor').value.trim())||'';
+    const chapter=($('scanChapter')&&$('scanChapter').value.trim())||'';
+    const title=baseTitle+(chapter?' — '+chapter:'')+' — Page '+(i+1);
+    if(!this.groupId) this.groupId='ch_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    const gid=this.groupId;
+    state.chapterProgress=state.chapterProgress||{};
+    state.chapterProgress[gid]={
+      title:baseTitle,
+      author,
+      pageCount:this.pages.length,
+      pageWordCounts:this.pages.map(pg=>wordCount(pg.text)),
+      readPages:(state.chapterProgress[gid]&&state.chapterProgress[gid].readPages)||[],
+      startedDate:(state.chapterProgress[gid]&&state.chapterProgress[gid].startedDate)||Date.now(),
+      events:(state.chapterProgress[gid]&&state.chapterProgress[gid].events)||[]
+    };
+    state.activeChapter={title, author, chapter, pages:String(i+1), text:p.text, groupId:gid, pageIndex:i, date:Date.now()};
+    upsertLibraryEntry({title, author, chapter, pages:String(i+1), type:'scanned chapter', text:p.text, groupId:gid, pageIndex:i, date:Date.now()});
+    fillReadingFields(p.text, title);
+    save();
+    this.renderBookPicker();
+    alert('Loaded just Page '+(i+1)+' as your Active Chapter — Reading, Lawnmower, and Study Guide will use only this page until you load something else.');
+  },
+
+  editPage(i,val){ if(this.pages[i]) this.pages[i].text=val; this.renderPages(); },
+  deletePage(i){ this.pages.splice(i,1); this.renderPages(); },
+
+  firstLine(text){
+    const l=String(text||'').split('\n').map(x=>x.trim()).filter(Boolean)[0];
+    return l||null;
+  },
+
+  // Strips standalone page numbers (their own line, nothing else), a
+  // leading line that exactly repeats the previous page's first line
+  // (a running header), and common scanning-app UI text in case a
+  // screenshot ever slips in instead of a clean export.
+  stripPageNoise(text,priorFirstLine){
+    let lines=String(text||'').split('\n');
+    while(lines.length && /^\s*\d{1,4}\s*$/.test(lines[0])) lines.shift();
+    while(lines.length && /^\s*\d{1,4}\s*$/.test(lines[lines.length-1])) lines.pop();
+    if(priorFirstLine && lines.length && lines[0].trim()===priorFirstLine) lines.shift();
+    const uiJunk=/^(copy all|share|read aloud|ai cleanup|more|default folder|image|text|\d+\s*\/\s*\d+)$/i;
+    lines=lines.filter(l=>!uiJunk.test(l.trim()));
+    return lines.join('\n').trim();
+  },
+
+  finalizePageText(raw){
+    let text=this.cleanOcr(raw||'');
+    this.autoFillMeta(text);
+    text=stripHeadingNoise(text);
+    const priorFirst=this.pages.length?this.firstLine(this.pages[this.pages.length-1].text):null;
+    text=this.stripPageNoise(text,priorFirst);
+    return text;
+  },
+
+  async rescan(i){
+    if(this.busy) return;
+    const inp=document.createElement('input');
+    inp.type='file'; inp.accept='image/*';
+    inp.onchange=async ()=>{
+      const file=inp.files&&inp.files[0];
+      if(!file) return;
+      this.busy=true;
+      const raw=await this.runOcr(file);
+      this.busy=false;
+      if(raw!==null){ this.pages[i].text=this.finalizePageText(raw); this.renderPages(); }
+    };
+    inp.click();
+  },
+
+  async addFromFile(file){
+    if(!file||this.busy) return;
+    this.busy=true;
+    const raw=await this.runOcr(file);
+    this.busy=false;
+    if(!this.pages.length) this.groupId='ch_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    this.pages.push({text:this.finalizePageText(raw||''), addedDate:Date.now()});
+    state.totalPagesAdded=(state.totalPagesAdded||0)+1;
+    save();
+    this.renderPages();
+    this.renderBookPicker();
+  },
+
+  addManualPage(){
+    const box=$('scanManualText');
+    const raw=box.value.trim();
+    if(!raw){ alert('Type or paste some text first.'); return; }
+    if(!this.pages.length) this.groupId='ch_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    this.pages.push({text:this.finalizePageText(raw), addedDate:Date.now()});
+    state.totalPagesAdded=(state.totalPagesAdded||0)+1;
+    save();
+    box.value='';
+    this.setStatus('Page added from typed/pasted text.');
+    this.renderPages();
+    this.renderBookPicker();
+  },
+
+  toggleExperimental(){
+    const shown=!$('expSection').classList.contains('hidden');
+    $('expSection').classList.toggle('hidden');
+    $('expToggleBtn').textContent=shown?'Show Experimental Photo Scan (not recommended)':'Hide Experimental Photo Scan';
+  },
+
+  // Looks for "Chapter 1", "Chapter One: The Beginning", "Page 8" etc.
+  // right in the scanned text and fills the Chapter/Page fields — but
+  // only if you haven't already typed something there yourself.
+  detectChapter(text){
+    const t=String(text||'');
+    const numMatch=t.match(/\bChapter\s+([0-9]+|[IVXLCDM]+|One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Eleven|Twelve)\b/i);
+    if(!numMatch) return '';
+    const num=numMatch[1];
+    const after=t.slice(numMatch.index+numMatch[0].length);
+    // Case-sensitive on purpose: a real chapter title starts with a true
+    // capital letter. Without that, the /i flag above would let this match
+    // ordinary lowercase body text as if it were a title.
+    const titleMatch=after.match(/^\s*[:.\-–—]?\s*([A-Z][A-Za-z0-9 ,'’\-]{2,58})/);
+    const title=titleMatch?titleMatch[1].trim().replace(/\s+/g,' '):'';
+    return 'Chapter '+num+(title?': '+title:'');
+  },
+  detectBookTitle(text){
+    const lines=String(text||'').split(/\n+/).map(x=>x.trim()).filter(Boolean);
+    const byIdx=lines.findIndex(l=>/^by\s+[A-Z]/i.test(l));
+    if(byIdx>0 && lines[byIdx-1].length<70) return lines[byIdx-1];
+    return '';
+  },
+  detectAuthor(text){
+    const t=String(text||'');
+    const m=t.match(/\bby[ \t]+([A-Z][A-Za-z.'-]+(?:[ \t]+[A-Z][A-Za-z.'-]+){0,3})/);
+    return m?m[1].trim():'';
+  },
+  detectPage(text){
+    const m=String(text||'').match(/\bPage\s+(\d{1,4})\b/i);
+    return m?parseInt(m[1],10):null;
+  },
+  pagesFieldEdited(){
+    this.autoPagesField=!$('scanPagesField').value.trim();
+  },
+
+  async aiAutoFillMeta(text, titleEl, authorEl, chapEl){
+    try{
+      const info=await AI.identifyBook(text);
+      if(titleEl && !titleEl.value.trim() && info.title) titleEl.value=info.title;
+      if(authorEl && !authorEl.value.trim() && info.author) authorEl.value=info.author;
+      if(chapEl && !chapEl.value.trim() && info.chapter) chapEl.value=info.chapter;
+    }catch(e){
+      // Silent on purpose -- fields just stay blank, same as before AI existed.
+    }
+  },
+  autoFillMeta(text){
+    const titleEl=$('scanTitle');
+    if(titleEl && !titleEl.value.trim() && this.detectBookTitle){
+      const t=this.detectBookTitle(text);
+      if(t) titleEl.value=t;
+    }
+    const authorEl=$('scanAuthor');
+    if(authorEl && !authorEl.value.trim()){
+      const a=this.detectAuthor(text);
+      if(a) authorEl.value=a;
+    }
+    const chapEl=$('scanChapter');
+    if(chapEl && !chapEl.value.trim()){
+      const c=this.detectChapter(text);
+      if(c) chapEl.value=c;
+    }
+    // If the simple text patterns above came up empty, ask AI to take a
+    // guess instead -- silent and best-effort, since a wrong or missing
+    // guess here just means the field stays blank like before.
+    if((!titleEl||!titleEl.value.trim())||(!authorEl||!authorEl.value.trim())||(!chapEl||!chapEl.value.trim())){
+      this.aiAutoFillMeta(text, titleEl, authorEl, chapEl);
+    }
+    const pageEl=$('scanPagesField');
+    if(pageEl && this.autoPagesField){
+      if(this.startPage===null){
+        const p=this.detectPage(text);
+        if(p!==null) this.startPage=p;
+      }
+      // Only fill this in when a real page number was actually found in
+      // the text. Fabricating "1" as a fallback when nothing was detected
+      // looked exactly like a real value and was misleading -- an empty
+      // field showing the placeholder is more honest.
+      if(this.startPage!==null){
+        const end=this.startPage+this.pages.length-1;
+        pageEl.value=this.pages.length>1?(this.startPage+'-'+end):String(this.startPage);
+      }
+    }
+  },
+  camChange(ev){
+    const f=ev.target.files&&ev.target.files[0];
+    ev.target.value='';
+    if(!f){ this.setStatus('No photo was received from the camera. Try again, or use Existing Photo instead.'); return; }
+    this.setStatus('Got the photo. Starting scan...');
+    this.addFromFile(f);
+  },
+  galChange(ev){
+    const f=ev.target.files&&ev.target.files[0];
+    ev.target.value='';
+    if(!f){ this.setStatus('No photo was selected. Try again.'); return; }
+    this.setStatus('Got the photo. Starting scan...');
+    this.addFromFile(f);
+  },
+
+  saveActive(){
+    const text=this.combined();
+    if(!text){ alert('Scan at least one page first.'); return; }
+    const title=($('scanTitle')&&$('scanTitle').value.trim())||'Scanned Chapter';
+    const author=($('scanAuthor')&&$('scanAuthor').value.trim())||'';
+    const chapter=($('scanChapter')&&$('scanChapter').value.trim())||'';
+    const pages=($('scanPagesField')&&$('scanPagesField').value.trim())||('1-'+this.pages.length);
+    if(!this.groupId) this.groupId='ch_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    const gid=this.groupId;
+    state.chapterProgress=state.chapterProgress||{};
+    state.chapterProgress[gid]={
+      title,
+      author,
+      pageCount:this.pages.length,
+      pageWordCounts:this.pages.map(p=>wordCount(p.text)),
+      readPages:(state.chapterProgress[gid]&&state.chapterProgress[gid].readPages)||[],
+      startedDate:(state.chapterProgress[gid]&&state.chapterProgress[gid].startedDate)||Date.now(),
+      events:(state.chapterProgress[gid]&&state.chapterProgress[gid].events)||[]
+    };
+    state.activeChapter={title,author,chapter,pages,text,groupId:gid,pageIndex:null,date:Date.now()};
+    upsertLibraryEntry({title,author,chapter,pages,type:'scanned chapter',text,groupId:gid,pageIndex:null,date:Date.now()});
+    // Also save every individual page, not just the combined blob --
+    // otherwise there's nothing to pick from later if someone only ever
+    // used "Save Whole Chapter" and never loaded pages one at a time.
+    this.pages.forEach((p,i)=>{
+      upsertLibraryEntry({title, author, chapter, pages:String(i+1), type:'scanned chapter', text:p.text, groupId:gid, pageIndex:i, date:p.addedDate||Date.now()});
+    });
+    save();
+    fillReadingFields(text, title);
+    this.renderBookPicker();
+    alert('Saved as Active Chapter: "'+title+'" ('+this.pages.length+' page'+(this.pages.length===1?'':'s')+'). Reading, Lawnmower, and RSVP now have this text loaded.');
+  },
+
+  sendTo(view){
+    this.saveActive();
+    openView(view);
+  },
+
+  liveStream:null,
+
+  async openLiveCamera(){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      alert('This browser does not support an in-page camera. Use Scan Next Page or Existing Photo instead.');
+      return;
+    }
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+      this.liveStream=stream;
+      const video=$('scanLiveVideo');
+      video.srcObject=stream;
+      await video.play();
+      $('liveCameraOverlay').classList.remove('hidden');
+    }catch(e){
+      console.error(e);
+      alert('Could not open the camera: '+(e&&e.message?e.message:'permission denied or unavailable')+'. You can still use Scan Next Page or Existing Photo instead.');
+    }
+  },
+
+  closeLiveCamera(){
+    if(this.liveStream){ this.liveStream.getTracks().forEach(t=>t.stop()); this.liveStream=null; }
+    $('liveCameraOverlay').classList.add('hidden');
+  },
+
+  async captureLiveFrame(){
+    const video=$('scanLiveVideo');
+    if(!video.videoWidth){ alert('Camera is still starting up — wait a second and try again.'); return; }
+    const c=document.createElement('canvas');
+    c.width=video.videoWidth;
+    c.height=video.videoHeight;
+    c.getContext('2d').drawImage(video,0,0,c.width,c.height);
+    const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));
+    this.closeLiveCamera();
+    this.addFromFile(blob);
+  },
+
+  resetAll(){
+    if(!this.pages.length || confirm('Clear all scanned pages and start a new book/chapter?')){
+      this.pages=[]; this.startPage=null; this.autoPagesField=true; this.groupId=null; this.batchTitle=null;
+      if($('scanChapter')) $('scanChapter').value='';
+      if($('scanPagesField')) $('scanPagesField').value='';
+      if($('scanTitle')) $('scanTitle').value='';
+      if($('scanAuthor')) $('scanAuthor').value='';
+      this.renderPages();
+      this.renderBookPicker();
+    }
+  }
+};
+
+/* ============================================================
+   PERIPHERAL GRID — warm-up focus drill. "Passing" here means
+   finishing with 80%+ tap accuracy (correct taps vs. total taps),
+   since there's no reading comprehension to quiz on. Speed still
+   earns XP; misclicks still cost accuracy and XP, same spirit as
+   the reading quizzes.
+   ============================================================ */
+const Grid={
+  next:1, taps:0, startTime:0, tick:null, running:false,
+
+  skip(){
+    if(!confirm('Skip the warm-up? This unlocks RSVP, but you miss the actual focus-training benefit of the drill. You can always come back and play it for real later.')) return;
+    this.stop();
+    state.modePassed=state.modePassed||{};
+    state.modePassed.grid=true;
+    save();
+    refreshLocks();
+    alert('Skipped. RSVP is unlocked.');
+    home();
+  },
+
+  start(){
+    this.next=1; this.taps=0; this.running=true;
+    $('gridTarget').textContent='1';
+    $('gridTimerStat').classList.remove('hidden');
+    $('gridAccStat').classList.remove('hidden');
+    $('gridAcc').textContent='100%';
+    const nums=Array.from({length:25},(_,i)=>i+1).sort(()=>Math.random()-.5);
+    $('numGrid').innerHTML=nums.map(n=>'<div class="gridCell" onclick="Grid.tap(this,'+n+')">'+n+'</div>').join('');
+    this.startTime=Date.now();
+    clearInterval(this.tick);
+    this.tick=setInterval(()=>{
+      $('gridTime').textContent=((Date.now()-this.startTime)/1000).toFixed(1)+'s';
+    },100);
+  },
+
+  tap(el,n){
+    if(!this.running) return;
+    this.taps++;
+    if(n!==this.next){
+      el.classList.add('wrong');
+      setTimeout(()=>el.classList.remove('wrong'),200);
+      this.updateAcc();
+      return;
+    }
+    el.classList.add('gone');
+    this.next++;
+    this.updateAcc();
+    if(this.next>25){ this.finish(); return; }
+    $('gridTarget').textContent=this.next;
+  },
+
+  updateAcc(){
+    const acc=Math.round(25/this.taps*100);
+    $('gridAcc').textContent=acc+'%';
+  },
+
+  stop(){ this.running=false; clearInterval(this.tick); },
+
+  finish(){
+    this.running=false;
+    clearInterval(this.tick);
+    const sec=(Date.now()-this.startTime)/1000;
+    const acc=Math.round(25/this.taps*100);
+    const passed=acc>=80;
+    const delta=passed?Math.max(15,Math.round(100-sec*1.2)):-Math.max(5,Math.round((100-acc)/2));
+    newBest('gridTime',sec,'Grid Time',true);
+    completeMission('train');
+    if(passed){ state.modePassed=state.modePassed||{}; state.modePassed.grid=true; }
+    save();
+    addXp(delta,'Peripheral Grid '+acc+'%');
+    alert((passed?'Passed':'Not passed')+' — '+acc+'% accuracy in '+sec.toFixed(1)+'s. XP '+(delta>=0?'+':'')+delta+(passed?'':'. Score 80%+ accuracy to pass and unlock RSVP.'));
+    home();
+  }
+};
+
+const Memory={
+  span:3, sequence:'', running:false, best:0, lastSuccess:0, _timer:null,
+
+  start(){
+    this.span=3;
+    this.lastSuccess=0;
+    this.best=(state.highScores&&state.highScores.memorySpan)||0;
+    $('memBest').textContent=this.best;
+    this.round();
+  },
+
+  round(){
+    this.running=true;
+    $('memSpan').textContent=this.span;
+    this.sequence=Array.from({length:this.span},()=>Math.floor(Math.random()*10)).join('');
+    $('memDisplay').textContent=this.sequence;
+    $('memInputWrap').classList.add('hidden');
+    $('memInput').value='';
+    clearTimeout(this._timer);
+    const showTime=1000+this.span*500;
+    this._timer=setTimeout(()=>{
+      if(!this.running) return;
+      $('memDisplay').textContent='?'.repeat(this.span);
+      $('memInputWrap').classList.remove('hidden');
+      $('memInput').focus();
+    },showTime);
+  },
+
+  submit(){
+    if(!this.running) return;
+    const guess=$('memInput').value.trim();
+    if(guess===this.sequence){
+      this.lastSuccess=this.span;
+      this.span++;
+      this.round();
+    }else{
+      this.finish();
+    }
+  },
+
+  finish(){
+    this.running=false;
+    clearTimeout(this._timer);
+    const reached=this.lastSuccess;
+    $('memInputWrap').classList.add('hidden');
+    let isNewBest=false;
+    if(reached>this.best){
+      state.highScores=state.highScores||{};
+      state.highScores.memorySpan=reached;
+      isNewBest=true;
+      this.best=reached;
+    }
+    save();
+    $('memBest').textContent=this.best;
+    if(reached>0){
+      $('memDisplay').textContent='Game over — it was '+this.sequence;
+      const xp=Math.max(10,reached*15);
+      addXp(xp,'Memory Game — reached span '+reached);
+      alert('Game over! You reached a span of '+reached+' digits.'+(isNewBest?' New personal best!':'')+' +'+xp+' XP');
+    }else{
+      $('memDisplay').textContent='Game over — try again!';
+      alert('Game over on the very first round — give it another shot.');
+    }
+  },
+
+  stop(){
+    this.running=false;
+    clearTimeout(this._timer);
+  }
+};
+
+/* ============================================================
+   RSVP FAST READER — flashes one word at a time at a chosen pace.
+   Since the full text is already shown to the reader, it ends in
+   the same shared Quiz engine as every other mode: same 80%
+   threshold, same WPM/XP penalty on a miss.
+   ============================================================ */
+const Rsvp={
+  words:[], idx:0, speed:300, timer:null, paused:false,
+
+  loadActive(){
+    if(!state.activeChapter || !state.activeChapter.text){ alert('No Active Chapter yet — scan a page, build a Study Guide, or load something from your Library first.'); return; }
+    $('rsvpText').value=state.activeChapter.text;
+  },
+
+  tick(){
+    if(this.paused) return;
+    if(this.idx>=this.words.length){
+      this.stop();
+      completeMission('read');
+      markChapterProgress();
+      Quiz.render($('quizRsvp'), this.words.join(' '), this.speed, 'rsvp');
+      return;
+    }
+    $('rsvpWord').textContent=this.words[this.idx++];
+  },
+
+  start(){
+    this.stop();
+    const text=$('rsvpText').value.trim();
+    this.words=normalize(text).split(/\s+/).filter(Boolean);
+    if(!this.words.length){ alert('Paste reading text first.'); return; }
+    this.speed=+$('rsvpSpeed').value;
+    this.idx=0;
+    this.paused=false;
+    $('rsvpPauseBtn').classList.remove('hidden');
+    $('quizRsvp').classList.add('hidden');
+    $('rsvpWord').textContent=this.words[this.idx++];
+    this.timer=setInterval(()=>this.tick(), 60000/this.speed);
+  },
+
+  // Actually connects the slider to the running session -- moving it now
+  // restarts the interval at the new pace immediately instead of just
+  // updating a number that had no effect on the real word-flash speed.
+  setSpeed(v){
+    this.speed=+v;
+    if(this.timer){
+      clearInterval(this.timer);
+      this.timer=setInterval(()=>this.tick(), 60000/this.speed);
+    }
+  },
+
+  pause(){
+    if(!this.timer) return;
+    this.paused=!this.paused;
+  },
+
+  stop(){
+    clearInterval(this.timer);
+    this.timer=null;
+    $('rsvpWord').textContent='STANDBY';
+    $('rsvpPauseBtn').classList.add('hidden');
+  }
+};
+
+/* ============================================================
+   STUDY GUIDE — builds a structured WHAT/WHO/WHERE/WHEN/context
+   guide from a passage using the same sentence/keyword/people
+   helpers the quiz engine uses. Saves as the Active Chapter so
+   Reading and Lawnmower can pick it straight up.
+   ============================================================ */
+const StudyGuide={
+  build(){
+    const text=$('studyText').value.trim();
+    const title=$('studyTitle').value.trim()||'Untitled Reading';
+    if(!text){ alert('Paste or scan a passage first.'); return; }
+
+    const ss=sentences(text), kw=keywords(text), who=people(text);
+    const g={
+      title, text,
+      main: ss[0]||text.slice(0,150),
+      what1: ss[0]||'',
+      what2: ss[1]||'Find the command, lesson, choice, or warning in this passage.',
+      who: who.length ? who.join(', ') : 'You, God, Jesus, the reader, or the main people mentioned.',
+      where: 'The setting, situation, heart, mind, or circumstance shown in the reading.',
+      when: 'Whenever this truth applies in daily life.',
+      context: 'This passage teaches a truth that can shape your thoughts, actions, faith, and choices.',
+      application: 'Today I will choose one truth from this reading and practice it on purpose.',
+      takeaway: ss[ss.length-1]||ss[0]||'',
+      prayer: 'God, help me understand this truth and live it out today. Guide my thoughts, words, and choices. Amen.',
+      question: 'What is one thing I need to change or practice after reading this?',
+      kw
+    };
+
+    // Carry over chapter/page info (and the groupId, so chapter-progress
+    // tracking doesn't silently break) if this guide was built from the
+    // same text already sitting in the Active Chapter.
+    const prior=state.activeChapter;
+    const sameSource=prior&&prior.text===text;
+    const inheritedChapter=(sameSource&&prior.chapter)||'';
+    const inheritedPages=(sameSource&&prior.pages)||'';
+    const inheritedGroupId=(sameSource&&prior.groupId)||null;
+    const inheritedPageIndex=sameSource?(typeof prior.pageIndex==='number'?prior.pageIndex:null):null;
+
+    state.activeChapter={title, chapter:inheritedChapter, pages:inheritedPages, text, groupId:inheritedGroupId, pageIndex:inheritedPageIndex, date:Date.now()};
+    state.guides=(state.guides||0)+1;
+    state.wordsRead=(state.wordsRead||0)+wordCount(text);
+    upsertLibraryEntry({title, chapter:inheritedChapter, pages:inheritedPages, type:'study guide', text, groupId:inheritedGroupId, pageIndex:inheritedPageIndex, date:Date.now(), guide:g});
+    state.flashcards=kw.map(k=>({front:k.toUpperCase(), back:'Explain this word from the reading in your own words.', status:'new'}));
+    completeMission('guide');
+    save();
+    addXp(75,'Study Guide Built');
+
+    this.render(g);
+  },
+
+  render(g){
+    const box=$('guideOut');
+    box.classList.remove('hidden');
+    function card(label,content,color){
+      return '<div class="branch-card'+(color?' '+color:'')+'"><h3>'+label+'</h3><p>'+content+'</p></div>';
+    }
+    box.innerHTML=
+      '<div class="panel" style="text-align:center;font-size:22px;font-weight:1000;color:var(--primary);border:2px solid var(--primary)">'+esc(g.title)+'</div>'
+      +card('MAIN IDEA / SETTING', esc(g.main), 'orange')
+      +card('WHAT?', '<b>Action 1:</b> '+esc(g.what1)+'<br><b>Action 2:</b> '+esc(g.what2), '')
+      +card('WHO?', esc(g.who), 'red')
+      +card('WHERE?', esc(g.where), '')
+      +card('WHEN?', esc(g.when), 'purple')
+      +card('CONTEXT', esc(g.context), 'pink')
+      +card('PERSONAL APPLICATION', esc(g.application), 'yellow')
+      +card('KEY TAKEAWAY', esc(g.takeaway), '')
+      +card('PRAYER', esc(g.prayer), 'purple')
+      +card('REFLECTION QUESTION', esc(g.question), 'orange')
+      +card('KEY WORDS', esc(g.kw.join(', ')||'—'), '')
+      +'<div class="panel tiny">Saved as your Active Chapter — Reading and Lawnmower will use this same passage until you scan or paste a new one.</div>'
+      +'<button onclick="StudyGuide.sendTo(\'read\')">Send To Reading Test</button>'
+      +'<button onclick="StudyGuide.sendTo(\'lawn\')">Send To Lawnmower</button>';
+  },
+
+  sendTo(view){
+    fillReadingFields(state.activeChapter.text, state.activeChapter.title);
+    openView(view);
+  }
+};
+
+/* ============================================================
+   FLASHCARDS — reviews the key words from the latest Study Guide.
+   Tap to flip. A full pass (every card flipped at least once)
+   earns a small XP bonus and counts toward lifetime reviews.
+   ============================================================ */
+const Flash={
+  idx:0, flipped:false, reviewedThisPass:new Set(), filterStruggling:false,
+
+  deck(){
+    const all=state.flashcards||[];
+    return this.filterStruggling ? all.filter(c=>c.status==='learning') : all;
+  },
+
+  render(){
+    const cards=this.deck();
+    const box=$('flashBox');
+    this.renderMastery();
+    if(!cards.length){
+      box.innerHTML='<p class="tiny">'+(this.filterStruggling
+        ?'Nothing marked "Still Learning" right now — nice.'
+        :'No flashcards yet. Build a Study Guide first — its key words become your flashcards automatically.')+'</p>';
+      $('flashNav').classList.add('hidden');
+      $('flashCounter').textContent='';
+      return;
+    }
+    if(this.idx>=cards.length) this.idx=0;
+    $('flashNav').classList.remove('hidden');
+    const c=cards[this.idx];
+    $('flashCounter').textContent=(this.idx+1)+' / '+cards.length;
+    if(!this.flipped){
+      box.innerHTML='<div class="flashcard" onclick="Flash.flip()">'+esc(c.front)+'</div>'
+        +'<p class="tiny" style="text-align:center">Tap to reveal the answer</p>';
+    }else{
+      box.innerHTML='<div class="flashcard" onclick="Flash.flip()">'+esc(c.back)+'</div>'
+        +'<div class="grid2" style="margin-top:8px">'
+          +'<button onclick="Flash.mark(\'learning\')">😓 Still Learning</button>'
+          +'<button class="green" onclick="Flash.mark(\'known\')">✅ Got It</button>'
+        +'</div>';
+    }
+  },
+
+  renderMastery(){
+    const el=$('flashMastery');
+    if(!el) return;
+    const all=state.flashcards||[];
+    const known=all.filter(c=>c.status==='known').length;
+    const learning=all.filter(c=>c.status==='learning').length;
+    const fresh=all.length-known-learning;
+    el.innerHTML=all.length
+      ?'<b style="color:var(--green)">'+known+'</b> known &nbsp;•&nbsp; <b style="color:var(--gold)">'+learning+'</b> still learning &nbsp;•&nbsp; <b style="color:var(--muted)">'+fresh+'</b> new'
+      :'';
+  },
+
+  toggleFilter(){
+    this.filterStruggling=!this.filterStruggling;
+    $('flashFilterBtn').textContent=this.filterStruggling?'Show All Cards':'Review Struggling Cards Only';
+    this.idx=0; this.flipped=false;
+    this.render();
+  },
+
+  flip(){
+    this.flipped=!this.flipped;
+    const cards=this.deck();
+    const c=cards[this.idx];
+    if(c) this.reviewedThisPass.add(c.front);
+    this.render();
+    this.checkPassComplete();
+  },
+
+  mark(status){
+    const cards=this.deck();
+    const c=cards[this.idx];
+    if(c) c.status=status;
+    save();
+    this.next();
+  },
+
+  next(){
+    const cards=this.deck();
+    if(!cards.length) return;
+    this.idx=(this.idx+1)%cards.length;
+    this.flipped=false;
+    this.render();
+  },
+  prev(){
+    const cards=this.deck();
+    if(!cards.length) return;
+    this.idx=(this.idx-1+cards.length)%cards.length;
+    this.flipped=false;
+    this.render();
+  },
+
+  checkPassComplete(){
+    const cards=state.flashcards||[];
+    if(cards.length && this.reviewedThisPass.size>=cards.length){
+      state.highScores=state.highScores||{};
+      state.highScores.flashReviews=(state.highScores.flashReviews||0)+cards.length;
+      this.reviewedThisPass=new Set();
+      save();
+      addXp(20,'Flashcard Review Pass Complete');
+    }
+  }
+};
+
+/* ============================================================
+   LIBRARY — a viewer over state.library, which Scanner and
+   Study Guide already save into. No separate storage, no
+   syncing two copies of the same list.
+   ============================================================ */
+const Library={
+  filter:'all',
+
+  setFilter(f){
+    this.filter=f;
+    document.querySelectorAll('.libTab').forEach(b=>b.classList.toggle('active', b.dataset.filter===f));
+    this.render();
+  },
+
+  spineColorFor(title){
+    let hash=0;
+    const s=String(title||'?');
+    for(let i=0;i<s.length;i++){ hash=(hash*31+s.charCodeAt(i))>>>0; }
+    const hue=hash%360, hue2=(hue+35)%360;
+    return 'linear-gradient(180deg,hsl('+hue+',65%,52%),hsl('+hue2+',60%,34%))';
+  },
+
+  initialsFor(title){
+    const words=String(title||'?').trim().split(/\s+/).filter(Boolean);
+    return (words[0]?.[0]||'?').toUpperCase()+(words[1]?.[0]||'').toUpperCase();
+  },
+
+  render(){
+    const box=$('libraryList');
+    const items=state.library||[];
+    if(!items.length){
+      box.innerHTML='<p class="tiny">Nothing saved yet. Scanning a page or building a Study Guide saves here automatically.</p>';
+      return;
+    }
+    const ch=state.activeChapter;
+    const query=(($('librarySearch')&&$('librarySearch').value)||'').trim().toLowerCase();
+    const groups={}, standalone=[];
+    items.forEach((item,i)=>{
+      if(item.groupId){
+        (groups[item.groupId]=groups[item.groupId]||[]).push({...item,idx:i});
+      }else{
+        standalone.push({...item,idx:i});
+      }
+    });
+
+    let html='';
+    let shown=0;
+    Object.keys(groups).forEach(gid=>{
+      const groupItems=groups[gid];
+      const primary=groupItems.find(x=>x.pageIndex==null&&x.type==='scanned chapter')||groupItems[0];
+      const progress=chapterProgressText(gid);
+      const isActiveGroup=ch&&ch.groupId===gid;
+      const guideCount=groupItems.filter(x=>x.type==='study guide').length;
+      const cleanTitle=primary.title.replace(/\s*—\s*Page\s*\d+\s*$/i,'');
+      const prog=state.chapterProgress&&state.chapterProgress[gid];
+      const author=prog&&prog.author;
+      const chapters=[...new Set(groupItems.map(x=>x.chapter).filter(Boolean))];
+      const readCount=(prog&&prog.readPages.length)||0;
+      const pageCount=(prog&&prog.pageCount)||0;
+      const pct=pageCount?Math.round(readCount/pageCount*100):0;
+
+      // Filter tab check
+      if(this.filter==='progress' && !(readCount>0 && readCount<pageCount)) return;
+      if(this.filter==='done' && !(pageCount>0 && readCount>=pageCount)) return;
+      // Search check
+      if(query){
+        const haystack=(cleanTitle+' '+(author||'')+' '+chapters.join(' ')).toLowerCase();
+        if(!haystack.includes(query)) return;
+      }
+      shown++;
+
+      html+='<div class="bookRow'+(isActiveGroup?' active':'')+'">'
+        +'<div class="bookSpine" style="background:'+this.spineColorFor(cleanTitle)+'">'+esc(this.initialsFor(cleanTitle))+'</div>'
+        +'<div class="bookBody">'
+        +(isActiveGroup?'<p class="tiny" style="color:var(--green);font-weight:900;margin:0 0 4px">● CURRENTLY ACTIVE</p>':'')
+        +'<h3 style="margin:0 0 2px">'+esc(cleanTitle)+'</h3>'
+        +(author?'<p class="tiny" style="color:var(--muted);margin:0 0 4px">by '+esc(author)+'</p>':'')
+        +(chapters.length?'<p class="tiny" style="color:var(--primary);margin:0 0 4px">'+esc(chapters.join(', '))+'</p>':'')
+        +(pageCount?'<div style="height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin:6px 0"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,var(--primary),var(--green))"></div></div>':'')
+        +(progress?'<p class="tiny" style="color:var(--gold);margin:0 0 4px">'+esc(progress)+'</p>':'')
+        +'<p class="tiny" style="margin:0 0 8px">'+groupItems.length+' item'+(groupItems.length===1?'':'s')+(guideCount?' • '+guideCount+' Study Guide'+(guideCount===1?'':'s'):'')+' • '+new Date(primary.date).toLocaleDateString()+'</p>'
+        +'<div class="grid2">'
+          +'<button onclick="Library.toggleGroup(\''+gid+'\')">View Pages</button>'
+          +(isActiveGroup?'<button disabled style="opacity:.5">Already Active</button>':'<button class="green" onclick="Library.loadGroup(\''+gid+'\')">Load As Active</button>')
+        +'</div>'
+        +'<div class="grid2" style="margin-top:8px">'
+          +'<button onclick="Library.toggleEdit(\''+gid+'\')">✏️ Edit Info</button>'
+          +((state.chapterProgress&&state.chapterProgress[gid]&&state.chapterProgress[gid].readPages.length>0)
+            ?'<button onclick="openReplay(\''+gid+'\')">▶ Replay</button>':'<span></span>')
+        +'</div>'
+        +'<div id="libEdit'+gid+'" class="hidden" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px">'
+          +'<label class="tiny">Book / Title</label><input id="libEditTitle'+gid+'" value="'+esc(cleanTitle)+'">'
+          +'<label class="tiny">Author</label><input id="libEditAuthor'+gid+'" value="'+esc(author||'')+'">'
+          +'<label class="tiny">Chapter</label><input id="libEditChapter'+gid+'" value="'+esc(chapters[0]||'')+'" placeholder="e.g. Chapter 3">'
+          +'<button class="green" onclick="Library.saveEdit(\''+gid+'\')" style="margin-top:8px">Save Changes</button>'
+        +'</div>'
+        +'<div id="libGroup'+gid+'" class="hidden" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px">'
+          +groupItems.slice().sort((a,b)=>(a.pageIndex??-1)-(b.pageIndex??-1)).map(x=>{
+            const label=x.pageIndex!=null?'Page '+(x.pageIndex+1):'Whole Chapter';
+            const kind=x.type==='study guide'?'📘':'📷';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">'
+              +'<span class="tiny">'+kind+' '+esc(label)+' ('+wordCount(x.text)+' words)</span>'
+              +'<span><button style="width:auto;padding:6px 10px;margin:0 4px" onclick="Library.load('+x.idx+')">Load</button>'
+              +'<button class="danger" style="width:auto;padding:6px 10px;margin:0" onclick="Library.remove('+x.idx+')">✕</button></span>'
+              +'</div>';
+          }).join('')
+        +'</div></div></div>';
+    });
+
+    standalone.forEach(item=>{
+      const i=item.idx;
+      const kind=item.type==='study guide'?'📘 Study Guide':'📷 Scanned Chapter';
+      const isActive=ch&&item.text===ch.text;
+      if(query && !item.title.toLowerCase().includes(query)) return;
+      if(this.filter!=='all') return; // standalone items have no progress data, so only show them in the unfiltered "All" view
+      shown++;
+      html+='<div class="branch-card"'+(isActive?' style="border-left-color:var(--green);background:rgba(16,185,129,.07)"':'')+'>'
+        +(isActive?'<p class="tiny" style="color:var(--green);font-weight:900;margin:0 0 6px">● CURRENTLY ACTIVE</p>':'')
+        +'<h3>'+esc(item.title)+'</h3>'
+        +'<p class="tiny">'+kind+' • '+wordCount(item.text)+' words • '+new Date(item.date).toLocaleDateString()+'</p>'
+        +'<div id="libText'+i+'" class="hidden" style="max-height:220px;overflow:auto;white-space:pre-wrap;font-size:14px;line-height:1.5;border-top:1px solid var(--border);margin-top:8px;padding-top:8px">'+esc(item.text)+'</div>'
+        +'<div class="grid2">'
+          +'<button onclick="Library.toggle('+i+')">View Text</button>'
+          +(isActive?'<button disabled style="opacity:.5">Already Active</button>':'<button class="green" onclick="Library.load('+i+')">Load As Active</button>')
+        +'</div>'
+        +'<button class="danger" onclick="Library.remove('+i+')">Delete</button>'
+        +'</div>';
+    });
+
+    if(!shown){
+      box.innerHTML='<p class="tiny">No books match'+(query?' "'+esc(query)+'"':' this filter')+'.</p>';
+      return;
+    }
+    box.innerHTML=html;
+  },
+
+  toggleGroup(gid){ $('libGroup'+gid).classList.toggle('hidden'); },
+
+  toggleEdit(gid){ $('libEdit'+gid).classList.toggle('hidden'); },
+
+  saveEdit(gid){
+    const title=$('libEditTitle'+gid).value.trim();
+    const author=$('libEditAuthor'+gid).value.trim();
+    const chapter=$('libEditChapter'+gid).value.trim();
+    if(!title){ alert('Title can\'t be empty.'); return; }
+    if(state.chapterProgress&&state.chapterProgress[gid]){
+      state.chapterProgress[gid].title=title;
+      state.chapterProgress[gid].author=author;
+    }
+    (state.library||[]).forEach(item=>{
+      if(item.groupId===gid){
+        // Preserve the "— Page N" suffix on individual page entries,
+        // only replacing the book-title portion in front of it.
+        const suffix=item.title.match(/\s*—\s*Page\s*\d+\s*$/i);
+        item.title=title+(suffix?suffix[0]:'');
+        item.author=author;
+        item.chapter=chapter;
+      }
+    });
+    if(state.activeChapter&&state.activeChapter.groupId===gid){
+      const suffix=state.activeChapter.title.match(/\s*—\s*Page\s*\d+\s*$/i);
+      state.activeChapter.title=title+(suffix?suffix[0]:'');
+      state.activeChapter.author=author;
+      state.activeChapter.chapter=chapter;
+    }
+    save();
+    this.render();
+    refreshActiveChapterBanner();
+  },
+
+  loadGroup(gid){
+    const items=(state.library||[]).filter(x=>x.groupId===gid);
+    const primary=items.find(x=>x.pageIndex==null&&x.type==='scanned chapter')||items[0];
+    if(!primary) return;
+    const idx=state.library.indexOf(primary);
+    this.load(idx);
+  },
+
+  toggle(i){ $('libText'+i).classList.toggle('hidden'); },
+
+  load(i){
+    const item=(state.library||[])[i];
+    if(!item) return;
+    state.activeChapter={title:item.title, chapter:item.chapter||'', pages:item.pages||'', text:item.text, groupId:item.groupId||null, pageIndex:(typeof item.pageIndex==='number'?item.pageIndex:null), date:Date.now()};
+    fillReadingFields(item.text, item.title);
+    save();
+    this.render();
+    alert('Loaded "'+item.title+'" as your Active Chapter. Reading, Lawnmower, RSVP, and Study Guide now have this text.');
+  },
+
+  remove(i){
+    const item=(state.library||[])[i];
+    if(!item) return;
+    if(!confirm('Delete "'+item.title+'"? This can\'t be undone.')) return;
+    state.library.splice(i,1);
+    save();
+    this.render();
+  }
+};
+
+/* ============================================================
+   VERSE VAULT — scan a photo or type directly, save it. No
+   pre-loaded content by design; this is your own vault, built
+   from your own words. Reuses Scanner's OCR pipeline instead
+   of duplicating it.
+   ============================================================ */
+const Verses={
+  busy:false,
+
+  async scanFile(ev){
+    const file=ev.target.files && ev.target.files[0];
+    ev.target.value='';
+    if(!file || this.busy) return;
+    this.busy=true;
+    $('verseStatus').textContent='Reading photo...';
+    const text=await Scanner.runOcr(file);
+    this.busy=false;
+    if(text){
+      $('verseText').value=text;
+      $('verseStatus').textContent='Scanned. Check the text, then Save To Vault.';
+    }else{
+      $('verseStatus').textContent='Scan failed or found nothing — try again or type it manually.';
+    }
+  },
+
+  save(){
+    const text=$('verseText').value.trim();
+    if(!text){ alert('Type or scan a verse first.'); return; }
+    const ref=$('verseRef').value.trim()||'Untitled Verse';
+    state.verses=state.verses||[];
+    state.verses.unshift({ref, text, date:Date.now()});
+    completeMission('verse');
+    save();
+    addXp(15,'Verse Saved: '+ref);
+    $('verseRef').value='';
+    $('verseText').value='';
+    $('verseStatus').textContent='Saved. +15 XP';
+    this.render();
+  },
+
+  remove(i){
+    const v=(state.verses||[])[i];
+    if(!v) return;
+    if(!confirm('Delete "'+(v.ref||'this verse')+'"?')) return;
+    state.verses.splice(i,1);
+    save();
+    this.render();
+  },
+
+  render(){
+    const box=$('verseList');
+    const items=state.verses||[];
+    if(!items.length){
+      box.innerHTML='<p class="tiny">Nothing saved yet.</p>';
+      return;
+    }
+    box.innerHTML=items.map((v,i)=>
+      '<div class="branch-card">'
+        +'<h3>'+esc(v.ref||'Untitled Verse')+'</h3>'
+        +'<p>'+esc(v.text||'')+'</p>'
+        +'<p class="tiny">'+(v.date?new Date(v.date).toLocaleDateString():'')+'</p>'
+        +'<button class="danger" onclick="Verses.remove('+i+')">Delete</button>'
+      +'</div>'
+    ).join('');
+  }
+};
+
+applyTheme(state.theme);
+render();
+refreshLocks();
+if(state.justMigrated){
+  $('migrateNote').classList.remove('hidden');
+  $('migrateNote').textContent='Your XP, rank, streak, and best WPM were carried over from the old app.';
+  delete state.justMigrated;
+  save();
+}
+</script>
+</body>
+</html>
