@@ -676,6 +676,76 @@ let state=loadState();
 
 function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 
+/* ============================================================
+   AI — talks to the app's private Worker (Val Town), which
+   holds the real Anthropic API key. This file never sees the
+   key itself. Every AI feature below fails soft: if the network
+   is down or the call errors, callers fall back to the original
+   local logic so the app never breaks because AI is unavailable.
+   ============================================================ */
+const AI={
+  ENDPOINT:'https://jake92094--d418f494772411f1aaab1607ee4eb77e.web.val.run',
+
+  async ask(prompt, maxTokens){
+    const res=await fetch(this.ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:maxTokens||1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    if(!res.ok) throw new Error('AI request failed: '+res.status);
+    const data=await res.json();
+    const block=(data.content||[]).find(c=>c.type==='text');
+    if(!block) throw new Error('AI returned no text');
+    return block.text;
+  },
+
+  extractJson(text){
+    const match=text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if(!match) throw new Error('No JSON found in AI response');
+    return JSON.parse(match[0]);
+  },
+
+  async generateQuiz(text){
+    const prompt='You are a reading comprehension quiz writer. Read the passage '
+      +'below and write exactly 4 multiple-choice questions that test real '
+      +'understanding of it (main idea, a supporting detail, a takeaway, and '
+      +'one vocabulary-in-context question). Each question needs exactly 4 '
+      +'options, only one correct. Respond with ONLY a JSON array, no other '
+      +'text, in this exact shape: '
+      +'[{"q":"question text","options":["a","b","c","d"],"a":0,"cat":"mainIdea","explain":"why this is correct"}] '
+      +'where "a" is the index (0-3) of the correct option, and "cat" is one of: '
+      +'mainIdea, support, takeaway, keyword.\n\nPassage:\n'+text.slice(0,6000);
+    const raw=await this.ask(prompt,1200);
+    const qs=this.extractJson(raw);
+    if(!Array.isArray(qs)||!qs.length) throw new Error('Bad quiz shape');
+    return qs;
+  },
+
+  async cleanupOcr(text){
+    const prompt='This text was scanned from a photo of a book page using OCR '
+      +'and likely has broken words, misread letters, or garbled spacing. Fix '
+      +'it to read as clean, correct text, keeping the original wording and '
+      +'meaning as closely as possible -- do not summarize or add anything. '
+      +'Respond with ONLY the corrected text, no commentary.\n\n'+text.slice(0,6000);
+    const cleaned=await this.ask(prompt,1500);
+    return cleaned.trim();
+  },
+
+  async identifyBook(text){
+    const prompt='Based on this excerpt, guess the book title, author, and '
+      +'chapter/section name if you can tell. If you genuinely cannot tell, '
+      +'use an empty string for that field -- never invent a guess you are not '
+      +'reasonably confident in. Respond with ONLY JSON in this exact shape: '
+      +'{"title":"","author":"","chapter":""}\n\nExcerpt:\n'+text.slice(0,3000);
+    const raw=await this.ask(prompt,300);
+    return this.extractJson(raw);
+  }
+};
+
 function expFor(l){ if(l<=1) return 0; return l*200 + l*(l-1)*25 - 125; }
 function calcLevel(xp){ let l=1; while(l<50 && xp>=expFor(l+1)) l++; return l; }
 function rankIcon(l){
@@ -1674,10 +1744,17 @@ const Quiz={
     // order with different wording.
     return pool.sort(()=>Math.random()-.5).slice(0,4);
   },
-  render(container, text, wpm, mode){
-    const qs=this.build(text);
-    this.session={qs, idx:0, correct:0, wpm, mode, text, container, picked:-1};
+  async render(container, text, wpm, mode){
     container.classList.remove('hidden');
+    container.innerHTML='<h2 style="color:var(--primary)">Understanding Check</h2>'
+      +'<p class="tiny">🤖 Writing your questions...</p>';
+    let qs;
+    try{
+      qs=await AI.generateQuiz(text);
+    }catch(e){
+      qs=this.build(text); // fallback: original local quiz, unchanged
+    }
+    this.session={qs, idx:0, correct:0, wpm, mode, text, container, picked:-1};
     this.renderQuestion();
   },
 
@@ -2160,9 +2237,20 @@ const Scanner={
       const result=await Tesseract.recognize(file,'eng',{
         logger:m=>{ if(m.status) this.setStatus('OCR: '+m.status+(m.progress?' '+Math.round(m.progress*100)+'%':'')); if(m.progress) this.setBar(m.progress*100); }
       });
-      const text=this.cleanOcr((result&&result.data&&result.data.text)||'');
+      let text=this.cleanOcr((result&&result.data&&result.data.text)||'');
       this.setBar(100);
-      this.setStatus(text.length<40 ? 'Scan looks weak — check lighting/focus, or edit the text by hand below.' : 'Scan complete. Check the text, then scan the next page or save.');
+      if(text.length>=40){
+        this.setStatus('Scan complete. 🤖 Cleaning up scan errors...');
+        try{
+          text=await AI.cleanupOcr(text);
+          this.setStatus('Scan complete and cleaned up. Check the text, then scan the next page or save.');
+        }catch(e){
+          // AI cleanup failed or offline -- keep the raw local-cleaned OCR text, same as before.
+          this.setStatus('Scan complete. Check the text, then scan the next page or save.');
+        }
+      }else{
+        this.setStatus('Scan looks weak — check lighting/focus, or edit the text by hand below.');
+      }
       return text;
     }catch(e){
       console.error(e);
@@ -2355,6 +2443,17 @@ const Scanner={
   pagesFieldEdited(){
     this.autoPagesField=!$('scanPagesField').value.trim();
   },
+
+  async aiAutoFillMeta(text, titleEl, authorEl, chapEl){
+    try{
+      const info=await AI.identifyBook(text);
+      if(titleEl && !titleEl.value.trim() && info.title) titleEl.value=info.title;
+      if(authorEl && !authorEl.value.trim() && info.author) authorEl.value=info.author;
+      if(chapEl && !chapEl.value.trim() && info.chapter) chapEl.value=info.chapter;
+    }catch(e){
+      // Silent on purpose -- fields just stay blank, same as before AI existed.
+    }
+  },
   autoFillMeta(text){
     const titleEl=$('scanTitle');
     if(titleEl && !titleEl.value.trim() && this.detectBookTitle){
@@ -2370,6 +2469,12 @@ const Scanner={
     if(chapEl && !chapEl.value.trim()){
       const c=this.detectChapter(text);
       if(c) chapEl.value=c;
+    }
+    // If the simple text patterns above came up empty, ask AI to take a
+    // guess instead -- silent and best-effort, since a wrong or missing
+    // guess here just means the field stays blank like before.
+    if((!titleEl||!titleEl.value.trim())||(!authorEl||!authorEl.value.trim())||(!chapEl||!chapEl.value.trim())){
+      this.aiAutoFillMeta(text, titleEl, authorEl, chapEl);
     }
     const pageEl=$('scanPagesField');
     if(pageEl && this.autoPagesField){
