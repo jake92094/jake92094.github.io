@@ -496,6 +496,7 @@ label.tiny{display:block;margin:10px 0 0}
       <div class="stat"><b id="lbRsvp">0</b><small>RSVP WPM</small></div>
       <div class="stat"><b id="lbGrid">0s</b><small>Grid Best Time</small></div>
       <div class="stat"><b id="lbMemSpan">0</b><small>Best Memory Span</small></div>
+      <div class="stat"><b id="lbAvgWpm">0</b><small>Avg WPM (recent)</small></div>
     </div>
     <div class="stat" style="margin-top:10px;text-align:left">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px"><small>Best Quiz Accuracy</small><b id="lbAcc">0%</b></div>
@@ -1217,8 +1218,12 @@ function renderPagePicker(mode){
   const pages=gid?(state.library||[]).filter(x=>x.groupId===gid&&x.type==='scanned chapter'&&typeof x.pageIndex==='number').sort((a,b)=>a.pageIndex-b.pageIndex):[];
   if(!pages.length){ wrap.classList.add('hidden'); return; }
   wrap.classList.remove('hidden');
+  const prog=state.chapterProgress&&state.chapterProgress[gid];
   sel.innerHTML='<option value="whole">Whole Chapter</option>'
-    +pages.map(p=>'<option value="'+p.pageIndex+'">Page '+(p.pageIndex+1)+'</option>').join('');
+    +pages.map(p=>{
+      const mark=pageIsMastered(prog,p.pageIndex)?' ⭐':(prog&&prog.readPages.includes(p.pageIndex)?' ✓':'');
+      return '<option value="'+p.pageIndex+'">Page '+(p.pageIndex+1)+mark+'</option>';
+    }).join('');
 }
 
 function loadSpecificPage(mode, value){
@@ -1234,6 +1239,33 @@ function loadSpecificPage(mode, value){
   if(mode==='rsvp') Rsvp.stop(); else Reader.stop(mode);
   const ta=$(mode==='lawn'?'lawnText':mode==='rsvp'?'rsvpText':'readText');
   if(ta) ta.value=entry.text;
+  // Also make this page the Active Chapter -- without this, starting a
+  // session replaced the chapter with an untracked copy and the page
+  // never counted toward progress or mastery.
+  state.activeChapter={title:entry.title, author:entry.author||'', chapter:entry.chapter||'', pages:String(pageIndex+1), text:entry.text, groupId:gid, pageIndex, date:Date.now()};
+  save();
+  refreshActiveChapterBanner();
+}
+
+// The app knows which page comes next: first unread page after the one
+// you're on, wrapping back to any earlier unread page if needed.
+function nextUnreadPageIndex(){
+  const ch=state.activeChapter;
+  const gid=ch&&ch.groupId;
+  const prog=gid&&state.chapterProgress&&state.chapterProgress[gid];
+  if(!prog||!prog.pageCount) return null;
+  const read=new Set(prog.readPages);
+  const start=(typeof ch.pageIndex==='number')?ch.pageIndex+1:0;
+  for(let i=start;i<prog.pageCount;i++) if(!read.has(i)) return i;
+  for(let i=0;i<prog.pageCount;i++) if(!read.has(i)) return i;
+  return null;
+}
+
+function continueNextPage(){
+  const i=nextUnreadPageIndex();
+  if(i===null){ alert('Every page of this chapter has been read — chapter done! 🎉'); return; }
+  loadSpecificPage('read', String(i));
+  openView('read');
 }
 
 function refreshActiveChapterBanner(){
@@ -1249,8 +1281,10 @@ function refreshActiveChapterBanner(){
   const words=wordCount(ch.text);
   const extra=[ch.chapter,ch.pages?('p. '+ch.pages):''].filter(Boolean).join(' • ');
   const progress=ch.groupId?chapterProgressText(ch.groupId):'';
+  const nextIdx=nextUnreadPageIndex();
   el.innerHTML='<b style="color:var(--green)">Active:</b> '+esc(ch.title||'Untitled')+(ch.author?' by '+esc(ch.author):'')+(extra?' — '+esc(extra):'')+' <span style="color:var(--muted)">('+words+' words)</span>'
-    +(progress?'<br><span class="tiny" style="color:var(--primary)">'+esc(progress)+'</span>':'');
+    +(progress?'<br><span class="tiny" style="color:var(--primary)">'+esc(progress)+'</span>':'')
+    +(nextIdx!==null?'<button type="button" class="green" style="margin-top:10px;margin-bottom:0" onclick="continueNextPage()">▶ Continue — Page '+(nextIdx+1)+' is next</button>':'');
   renderChapterHeatMap();
   renderNotes();
 }
@@ -1373,6 +1407,8 @@ function renderLeader(){
   $('lbRsvp').textContent=hs.rsvpWpm||0;
   $('lbGrid').textContent=hs.gridTime?hs.gridTime.toFixed(1)+'s':'0s';
   $('lbMemSpan').textContent=hs.memorySpan||0;
+  const wpmVals=(state.wpmHistory||[]).slice(-10).map(v=>typeof v==='object'?v.wpm:v);
+  $('lbAvgWpm').textContent=wpmVals.length?Math.round(wpmVals.reduce((a,b)=>a+b,0)/wpmVals.length):0;
   $('lbAcc').textContent=(hs.quizAccuracy||0)+'%';
   if($('lbAccBar')) $('lbAccBar').style.width=(hs.quizAccuracy||0)+'%';
   $('lbGuides').textContent=state.guides||0;
@@ -2128,6 +2164,7 @@ const Quiz={
         +coachNotes.map(n=>'<p class="tiny" style="margin:6px 0">'+n+'</p>').join('')
       +'</div>'
       +'<button class="green" id="qzRetry">Retry This Quiz</button>'
+      +(nextUnreadPageIndex()!==null?'<button class="green" onclick="continueNextPage()">▶ Next Page: '+(nextUnreadPageIndex()+1)+' →</button>':'')
       +'<button onclick="home()">Back to Hub</button>';
     container.querySelector('#qzRetry').onclick=()=>Quiz.render(container,text,wpm,mode);
     this.aiCoachNotes(container, recordedWpm, acc, mode);
