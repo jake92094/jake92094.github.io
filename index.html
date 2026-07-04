@@ -313,6 +313,10 @@ label.tiny{display:block;margin:10px 0 0}
     <div id="expSection" class="hidden">
       <div class="section">Scan A Photo With AI</div>
       <p class="tiny">🤖 Photos are now read by AI, which handles real book pages (angles, shadows, curves) far better than the old scanner. Frame the whole page with good light, and check the text after each scan.</p>
+      <label class="tiny" style="display:flex;align-items:center;gap:8px;margin:4px 0 10px">
+        <input type="checkbox" id="offlineScanToggle" style="width:auto;margin:0">
+        📴 Exact offline scan — word-for-word text, no AI (also works in airplane mode)
+      </label>
       <div class="grid2">
         <button type="button" onclick="document.getElementById('scanCam').click()">📷 Scan Next Page</button>
         <button type="button" onclick="document.getElementById('scanGal').click()">🖼️ Existing Photo</button>
@@ -2172,13 +2176,6 @@ const Reader={
       box.textContent='Nothing to read.';
       return;
     }
-    // Real lawnmower/boustrophedon mode reverses the word order on every
-    // other line, so your eyes can drop straight down from the end of one
-    // line and keep reading right-to-left without a return sweep to the
-    // margin. Each word (punctuation attached) stays intact -- only the
-    // order of whole words changes, never letters or word boundaries.
-    // Shown as one continuous page, same as Standard Reading, just with
-    // this alternating rail baked into every line.
     const dir=i=>i%2===0?'left':'right';
     const display=(i,text)=>dir(i)==='right' ? text.trim().split(/\s+/).reverse().join(' ') : text;
     const rail=i=>{
@@ -2187,9 +2184,31 @@ const Reader={
         ? '<div class="lmwRail"><span class="dot"></span><span class="bar"></span><span class="arrow">→</span></div>'
         : '<div class="lmwRail"><span class="arrow">←</span><span class="bar"></span><span class="dot"></span></div>';
     };
-    box.innerHTML=s.chunks.map((c,i)=>
-      '<div class="lmwLine" style="text-align:'+dir(i)+'">'+esc(display(i,c))+rail(i)+'</div>'
-    ).join('');
+    if(s.lawnIdx===undefined) s.lawnIdx=0;
+    // Tap-anywhere to advance: the whole reading box is the "next line"
+    // button, so nothing has to be scrolled by hand and no finger ever
+    // needs to sit over the text being read. The current line is
+    // highlighted, everything else dims, and the box keeps the active
+    // line centered on its own.
+    box.innerHTML='<p class="tiny" style="text-align:center;color:var(--primary);margin:0 0 8px">👆 Tap anywhere on the text to move to the next line</p>'
+      +s.chunks.map((c,i)=>
+        '<div class="lmwLine" style="text-align:'+dir(i)+';'
+          +(i===s.lawnIdx
+            ?'opacity:1;background:rgba(56,189,248,.12);border-radius:8px;padding:8px 10px'
+            :'opacity:.3')
+          +'">'+esc(display(i,c))+rail(i)+'</div>'
+      ).join('');
+    box.onclick=()=>{
+      if(s.lawnIdx<s.chunks.length-1){
+        s.lawnIdx++;
+        this.renderLawn(s);
+      }
+    };
+    const current=box.children[s.lawnIdx+1]; // +1 for the hint line
+    if(current){
+      const target=current.offsetTop-(box.clientHeight/2)+(current.offsetHeight/2);
+      box.scrollTop=Math.max(0,target);
+    }
   },
 
   finish(mode){
@@ -2326,11 +2345,11 @@ const Scanner={
   },
 
   async runOcr(file){
-    // AI vision first: the model reads the page photo directly, which
-    // handles real-world photos (curved pages, shadows, angles) far
-    // better than OCR ever did here. Tesseract remains as the offline
-    // fallback below if the AI call fails.
-    try{
+    const offline=$('offlineScanToggle')&&$('offlineScanToggle').checked;
+    // AI vision first (unless the person asked for an exact offline scan):
+    // the model reads the page photo directly, which handles real-world
+    // photos far better than OCR. Tesseract remains the offline path.
+    if(!offline) try{
       this.setBar(15);
       this.setStatus('🤖 AI is reading your page photo...');
       const b64=await AI.fileToJpegBase64(file,1568);
@@ -2361,7 +2380,7 @@ const Scanner={
       });
       let text=this.cleanOcr((result&&result.data&&result.data.text)||'');
       this.setBar(100);
-      if(text.length>=40){
+      if(text.length>=40 && !offline){
         this.setStatus('Scan complete. 🤖 Cleaning up scan errors...');
         try{
           text=await AI.cleanupOcr(text);
@@ -3415,4 +3434,3 @@ if(state.justMigrated){
 </script>
 </body>
 </html>
-
