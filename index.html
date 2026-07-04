@@ -208,13 +208,13 @@ label.tiny{display:block;margin:10px 0 0}
     <div class="iconTile" onclick="openView('verses')"><div class="ic">✝️</div><div class="lb">Verse Vault</div></div>
   </div>
   <div class="section">Training Modes</div>
-  <div class="tiny" style="margin:-4px 0 10px">Locked (🔒) modes need a 75%+ quiz pass on the one before them. <span style="color:var(--danger);text-decoration:underline;cursor:pointer" onclick="resetTrainingProgress()">Reset training progress</span></div>
+  <div class="tiny" style="margin:-4px 0 10px">Locked (🔒) modes unlock in order — finish each drill to open the next. Only the final Reading Test has a quiz. <span style="color:var(--danger);text-decoration:underline;cursor:pointer" onclick="resetTrainingProgress()">Reset training progress</span></div>
   <div class="iconGrid">
     <div class="iconTile" onclick="openView('grid')" id="cardGrid" title="Warm-up. Always unlocked."><div class="ic">🔢</div><div class="lb">Peripheral Grid</div></div>
     <div class="iconTile" onclick="openView('memory')" title="Bonus warm-up. Always unlocked."><div class="ic">🧩</div><div class="lb">Memorize Number</div></div>
-    <div class="iconTile" onclick="openView('rsvp')" id="cardRsvp" title="Locked until Peripheral Grid is passed at 75%+."><div class="ic">⚡</div><div class="lb">RSVP</div></div>
-    <div class="iconTile" onclick="openView('lawn')" id="cardLawn" title="Locked until RSVP is passed at 75%+."><div class="ic">🐍</div><div class="lb">Lawnmower</div></div>
-    <div class="iconTile" onclick="openView('read')" id="cardRead" title="Locked until Lawnmower is passed at 75%+."><div class="ic">📖</div><div class="lb">Reading Test</div></div>
+    <div class="iconTile" onclick="openView('rsvp')" id="cardRsvp" title="Locked until the Peripheral Grid warm-up is completed."><div class="ic">⚡</div><div class="lb">RSVP</div></div>
+    <div class="iconTile" onclick="openView('lawn')" id="cardLawn" title="Locked until the RSVP drill is completed."><div class="ic">🐍</div><div class="lb">Lawnmower</div></div>
+    <div class="iconTile" onclick="openView('read')" id="cardRead" title="Locked until the Lawnmower drill is completed."><div class="ic">📖</div><div class="lb">Reading Test</div></div>
   </div>
   <div class="section">Progress</div>
   <div class="iconGrid">
@@ -586,12 +586,19 @@ const OLD_KEY='haloState';
 // swapping them swaps the whole visual theme at once -- nothing else has
 // to change.
 const THEMES={
-  halo:    {name:'Halo Blue',      primary:'#38bdf8', green:'#10b981', danger:'#ef4444', gold:'#facc15', bg:'#050b14', card:'rgba(15,23,42,.88)', border:'rgba(56,189,248,.32)'},
-  covenant:{name:'Covenant Purple',primary:'#a78bfa', green:'#22d3ee', danger:'#f472b6', gold:'#facc15', bg:'#0a0517', card:'rgba(30,15,42,.88)', border:'rgba(167,139,250,.35)'},
-  unsc:    {name:'UNSC Green',     primary:'#84cc16', green:'#facc15', danger:'#f97316', gold:'#eab308', bg:'#0a0e05', card:'rgba(20,26,10,.88)', border:'rgba(132,204,22,.32)'},
-  gold:    {name:'Gold General',   primary:'#fbbf24', green:'#34d399', danger:'#ef4444', gold:'#fde047', bg:'#0f0a03', card:'rgba(30,22,8,.88)', border:'rgba(251,191,36,.35)'},
-  parchment:{name:'Parchment Book',primary:'#b45309', green:'#15803d', danger:'#b91c1c', gold:'#a16207', bg:'#f4ead8', card:'rgba(255,251,240,.9)', border:'rgba(180,83,9,.35)'}
+  halo:    {name:'Halo Blue',      unlock:1,  primary:'#38bdf8', green:'#10b981', danger:'#ef4444', gold:'#facc15', bg:'#050b14', card:'rgba(15,23,42,.88)', border:'rgba(56,189,248,.32)'},
+  covenant:{name:'Covenant Purple',unlock:10, primary:'#a78bfa', green:'#22d3ee', danger:'#f472b6', gold:'#facc15', bg:'#0a0517', card:'rgba(30,15,42,.88)', border:'rgba(167,139,250,.35)'},
+  unsc:    {name:'UNSC Green',     unlock:25, primary:'#84cc16', green:'#facc15', danger:'#f97316', gold:'#eab308', bg:'#0a0e05', card:'rgba(20,26,10,.88)', border:'rgba(132,204,22,.32)'},
+  gold:    {name:'Gold General',   unlock:40, primary:'#fbbf24', green:'#34d399', danger:'#ef4444', gold:'#fde047', bg:'#0f0a03', card:'rgba(30,22,8,.88)', border:'rgba(251,191,36,.35)'},
+  parchment:{name:'Parchment Book',unlock:1,  primary:'#b45309', green:'#15803d', danger:'#b91c1c', gold:'#a16207', bg:'#f4ead8', card:'rgba(255,251,240,.9)', border:'rgba(180,83,9,.35)'}
 };
+
+// Pro Readers (anyone who has hit 50 and restarted) keep every theme
+// unlocked permanently -- prestige must never take rewards away.
+function themeUnlocked(id){
+  const t=THEMES[id];
+  return !t.unlock || t.unlock<=1 || state.level>=t.unlock || (state.prestige||0)>0;
+}
 
 function applyTheme(id){
   const t=THEMES[id]||THEMES.halo;
@@ -889,13 +896,71 @@ function rankName(l){
     : 'Recruit '+l;
 }
 function today(){ return new Date().toDateString(); }
+// Real consecutive-day streak. Counts back from today (or yesterday, if
+// today's reading hasn't happened yet) through active + shielded days.
+// The old version counted lifetime active days and never broke -- this
+// one is honest, with a weekly shield as the forgiveness valve.
 function getStreak(){
-  state.streakDays=state.streakDays||[];
-  return state.streakDays.includes(today()) ? state.streakDays.length : state.streakDays.length;
+  const set=new Set([...(state.streakDays||[]),...(state.shieldedDays||[])]);
+  if(!set.size) return 0;
+  let n=0;
+  const d=new Date();
+  if(!set.has(d.toDateString())) d.setDate(d.getDate()-1);
+  while(set.has(d.toDateString())){ n++; d.setDate(d.getDate()-1); }
+  return n;
+}
+function weekKey(){
+  const d=new Date();
+  const onejan=new Date(d.getFullYear(),0,1);
+  return d.getFullYear()+'-w'+Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7);
 }
 function markToday(){
   state.streakDays=state.streakDays||[];
-  if(!state.streakDays.includes(today())) state.streakDays.push(today());
+  const t=today();
+  if(state.streakDays.includes(t)){ checkStreakMilestones(); return; }
+  // 🛡️ Streak Shield: if exactly yesterday was missed but the day before
+  // was active, and no shield has been used this week, quietly cover
+  // yesterday so one bad day doesn't torch the whole streak.
+  const y=new Date(); y.setDate(y.getDate()-1); const yk=y.toDateString();
+  const db=new Date(); db.setDate(db.getDate()-2); const dbk=db.toDateString();
+  const active=new Set([...state.streakDays,...(state.shieldedDays||[])]);
+  if(!active.has(yk) && active.has(dbk) && state.lastShieldWeek!==weekKey()){
+    state.shieldedDays=state.shieldedDays||[];
+    state.shieldedDays.push(yk);
+    state.lastShieldWeek=weekKey();
+    setTimeout(()=>showStreakToast('🛡️','STREAK SHIELD USED','Yesterday was covered — one shield per week. Streak lives!'),400);
+  }
+  state.streakDays.push(t);
+  checkStreakMilestones();
+}
+
+const STREAK_MILESTONES=[[3,50],[7,100],[14,200],[30,500],[60,800],[100,1500]];
+function checkStreakMilestones(){
+  const s=getStreak();
+  state.streakMilestones=state.streakMilestones||[];
+  STREAK_MILESTONES.forEach(([days,xp])=>{
+    if(s>=days && !state.streakMilestones.includes(days)){
+      state.streakMilestones.push(days);
+      // Direct XP math (same pattern as completeMission) instead of
+      // addXp, since addXp itself calls markToday -- avoids recursion.
+      state.xp=Math.max(0,state.xp+xp);
+      state.level=calcLevel(state.xp);
+      state.logs=state.logs||[];
+      state.logs.unshift({act:'🔥 '+days+'-Day Streak Milestone', delta:xp, date:Date.now(), level:state.level});
+      state.logs=state.logs.slice(0,30);
+      setTimeout(()=>showStreakToast('🔥','STREAK MILESTONE',days+'-day streak! +'+xp+' XP'),800);
+    }
+  });
+}
+
+function showStreakToast(icon,label,text){
+  const toast=document.createElement('div');
+  toast.className='achieveToast';
+  toast.innerHTML='<div style="font-size:32px">'+icon+'</div>'
+    +'<div><div style="font-size:10px;letter-spacing:1.5px;opacity:.75">'+label+'</div>'
+    +'<div style="font-size:16px">'+text+'</div></div>';
+  document.body.appendChild(toast);
+  setTimeout(()=>{ toast.classList.add('out'); setTimeout(()=>toast.remove(),450); },3400);
 }
 
 // Resets XP and level back to 1, but deliberately keeps everything else
@@ -959,6 +1024,10 @@ function render(){
 }
 
 function setTheme(id){
+  if(!themeUnlocked(id)){
+    alert('🔒 "'+THEMES[id].name+'" unlocks at Level '+THEMES[id].unlock+'. Keep reading!');
+    return;
+  }
   state.theme=id;
   applyTheme(id);
   save();
@@ -971,8 +1040,12 @@ function renderThemePicker(){
   el.innerHTML=Object.keys(THEMES).map(id=>{
     const t=THEMES[id];
     const active=state.theme===id;
-    return '<div onclick="setTheme(\''+id+'\')" title="'+esc(t.name)+'" style="width:30px;height:30px;border-radius:50%;cursor:pointer;background:linear-gradient(135deg,'+t.primary+','+t.green+');'
-      +(active?'box-shadow:0 0 0 3px #fff,0 0 10px '+t.primary:'box-shadow:0 0 0 1px rgba(255,255,255,.3)')+'"></div>';
+    const unlocked=themeUnlocked(id);
+    return '<div onclick="setTheme(\''+id+'\')" title="'+esc(t.name)+(unlocked?'':' — unlocks at Level '+t.unlock)+'" style="position:relative;width:30px;height:30px;border-radius:50%;cursor:pointer;background:linear-gradient(135deg,'+t.primary+','+t.green+');'
+      +(active?'box-shadow:0 0 0 3px #fff,0 0 10px '+t.primary:'box-shadow:0 0 0 1px rgba(255,255,255,.3)')
+      +(unlocked?'':';opacity:.35;filter:saturate(.4)')+'">'
+      +(unlocked?'':'<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px">🔒</span>')
+      +'</div>';
   }).join('');
 }
 
@@ -1045,22 +1118,21 @@ function markChapterProgress(){
   checkChapterComplete(ch.groupId);
 }
 
-// ⭐ Mastery: a page becomes "mastered" once its quiz has been PASSED in
-// two different reading modes. Never required for anything -- completion
-// stays one read -- this is the optional gold-star chase on top.
-// Only tracked for single-page sessions, since a whole-chapter read
-// can't fairly attribute a pass to individual pages.
+// ⭐ Mastery: a page becomes "mastered" once its Reading Test quiz has
+// been PASSED twice (two separate passing runs). Never required for
+// anything -- completion stays one read -- this is the optional
+// gold-star chase on top. Only tracked for single-page sessions.
 function markPageMastery(mode){
   const ch=state.activeChapter;
   if(!ch||!ch.groupId||ch.pageIndex===null||ch.pageIndex===undefined) return null;
   const prog=state.chapterProgress&&state.chapterProgress[ch.groupId];
   if(!prog) return null;
   prog.mastery=prog.mastery||{};
-  const modes=prog.mastery[ch.pageIndex]=prog.mastery[ch.pageIndex]||[];
-  const before=modes.length;
-  if(!modes.includes(mode)) modes.push(mode);
+  const passes=prog.mastery[ch.pageIndex]=prog.mastery[ch.pageIndex]||[];
+  const before=passes.length;
+  passes.push(Date.now());
   save();
-  if(modes.length>=2 && before<2) return {newlyMastered:true, page:ch.pageIndex+1};
+  if(passes.length>=2 && before<2) return {newlyMastered:true, page:ch.pageIndex+1};
   return null;
 }
 
@@ -1199,7 +1271,7 @@ function renderChapterHeatMap(){
     const bg=isCurrent?'var(--gold)':(isRead?'var(--green)':'rgba(148,163,184,.25)');
     return '<div title="Page '+(i+1)+(mastered?' — mastered ⭐':(isRead?' — read':(isCurrent?' — current':' — not read yet')))+'" style="flex:1;min-width:14px;height:14px;border-radius:3px;background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1">'+(mastered?'⭐':'')+'</div>';
   }).join('');
-  el.innerHTML='<div class="tiny" style="margin-bottom:4px;color:var(--muted)">Chapter progress by page — ⭐ = mastered (quiz passed in 2 modes)</div>'
+  el.innerHTML='<div class="tiny" style="margin-bottom:4px;color:var(--muted)">Chapter progress by page — ⭐ = mastered (test passed twice)</div>'
     +'<div style="display:flex;gap:3px;flex-wrap:wrap">'+cells+'</div>';
 }
 
@@ -1619,7 +1691,7 @@ function refreshLocks(){
     const blocker=lockedBy(id);
     card.classList.toggle('locked', !!blocker);
     card.title=blocker
-      ? ('Locked until '+MODE_LABEL[blocker]+' is passed at 75%+.')
+      ? ('Locked until '+MODE_LABEL[blocker]+' is completed.')
       : (id==='grid'?'Warm-up. Always unlocked.':'Unlocked — ready to go.');
   });
 }
@@ -1632,7 +1704,7 @@ function resetTrainingProgress(){
   state.modePassed={};
   save();
   refreshLocks();
-  alert('Training progress reset. RSVP, Lawnmower, and Reading are locked again until passed at 75%+, in order.');
+  alert('Training progress reset. RSVP, Lawnmower, and Reading are locked again — complete them in order to re-unlock.');
 }
 
 
@@ -2046,7 +2118,7 @@ const Quiz={
       :('You read at '+wpm+' WPM, but missed questions bring your recorded speed down to <b>'+recordedWpm+' WPM</b>. Score 75%+ (3 of 4) to pass and unlock the next mode.');
     container.innerHTML='<h2 style="color:var(--gold);text-align:center;letter-spacing:1px">'+(sessionComplete?'🏆 SESSION COMPLETE':(passed?'MISSION COMPLETE':'MISSION INCOMPLETE'))+'</h2>'
       +(sessionComplete?'<p class="tiny" style="text-align:center;color:var(--green)">Every training mode passed — that\'s full session #'+state.sessionsCompleted+'! +100 bonus XP. The ladder has re-locked for your next climb.</p>':'')
-      +(mastery&&mastery.newlyMastered?'<p class="tiny" style="text-align:center;color:var(--gold)">⭐ Page '+mastery.page+' MASTERED — quiz passed in 2 different modes! +50 XP</p>':'')
+      +(mastery&&mastery.newlyMastered?'<p class="tiny" style="text-align:center;color:var(--gold)">⭐ Page '+mastery.page+' MASTERED — Reading Test passed twice! +50 XP</p>':'')
       +'<div class="subtitle" style="text-align:center">COMPREHENSION REPORT</div>'
       +'<div class="branch-card"><div class="grid2">'
         +'<div class="stat" style="margin:0"><small>SCORE</small><b>'+correct+'/'+qs.length+' ('+acc+'%)</b></div>'
@@ -2297,7 +2369,26 @@ const Reader={
     $(mode==='lawn'?'pauseLawnBtn':'pauseReadBtn').classList.add('hidden');
     completeMission('read');
     markChapterProgress();
-    Quiz.render($(mode==='lawn'?'quizLawn':'quizRead'), s.text, wpm, mode);
+    if(mode==='lawn'){
+      // Lawnmower is a pure eye-training drill now: no quiz, no XP, no
+      // recorded WPM. The one real test (quiz, XP, records, mastery)
+      // lives at the end of the ladder in the Reading Test.
+      state.modePassed=state.modePassed||{};
+      state.modePassed.lawn=true;
+      save();
+      refreshLocks();
+      const box=$('quizLawn');
+      box.classList.remove('hidden');
+      box.innerHTML='<h2 style="color:var(--green);text-align:center">DRILL COMPLETE 🐍</h2>'
+        +'<div class="branch-card"><div class="grid2">'
+          +'<div class="stat" style="margin:0"><small>DRILL PACE</small><b>'+wpm+' WPM</b></div>'
+          +'<div class="stat" style="margin:0"><small>WORDS</small><b>'+s.total+'</b></div>'
+        +'</div><p class="tiny" style="margin-top:10px">Drills train your eyes — they don\'t record speed or give XP. The Reading Test at the end is where it counts: quiz, XP, records, and mastery stars all live there.</p></div>'
+        +'<button class="green" onclick="openView(\'read\')">Take the Reading Test →</button>'
+        +'<button onclick="home()">Back to Hub</button>';
+      return;
+    }
+    Quiz.render($('quizRead'), s.text, wpm, mode);
   }
 };
 
@@ -2968,7 +3059,20 @@ const Rsvp={
       this.stop();
       completeMission('read');
       markChapterProgress();
-      Quiz.render($('quizRsvp'), this.words.join(' '), this.speed, 'rsvp');
+      // RSVP is a pure pace drill now: no quiz, no XP, no recorded WPM.
+      state.modePassed=state.modePassed||{};
+      state.modePassed.rsvp=true;
+      save();
+      refreshLocks();
+      const box=$('quizRsvp');
+      box.classList.remove('hidden');
+      box.innerHTML='<h2 style="color:var(--green);text-align:center">DRILL COMPLETE ⚡</h2>'
+        +'<div class="branch-card"><div class="grid2">'
+          +'<div class="stat" style="margin:0"><small>DRILL PACE</small><b>'+this.speed+' WPM</b></div>'
+          +'<div class="stat" style="margin:0"><small>WORDS</small><b>'+this.words.length+'</b></div>'
+        +'</div><p class="tiny" style="margin-top:10px">Drills train your eyes — they don\'t record speed or give XP. The Reading Test is where it counts: quiz, XP, records, and mastery stars.</p></div>'
+        +'<button class="green" onclick="openView(\'lawn\')">Next Drill: Lawnmower →</button>'
+        +'<button onclick="home()">Back to Hub</button>';
       return;
     }
     $('rsvpWord').textContent=this.words[this.idx++];
