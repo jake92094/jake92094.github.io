@@ -309,10 +309,10 @@ label.tiny{display:block;margin:10px 0 0}
     <textarea id="scanManualText" placeholder="Paste a page of text here, then press Add This Page..." style="min-height:110px"></textarea>
     <button type="button" class="green" onclick="Scanner.addManualPage()">Add This Page</button>
 
-    <button type="button" onclick="Scanner.toggleExperimental()" id="expToggleBtn" style="margin-top:24px">Show Experimental Photo Scan (not recommended)</button>
+    <button type="button" onclick="Scanner.toggleExperimental()" id="expToggleBtn" style="margin-top:24px">📷 Show AI Photo Scan</button>
     <div id="expSection" class="hidden">
-      <div class="section">Scan A Photo In This App (Experimental)</div>
-      <p class="tiny">This has failed repeatedly on real photos, including ones that scanned perfectly elsewhere. Pasting text above is the only option that's actually worked. Use this only out of curiosity, not for anything you need to keep.</p>
+      <div class="section">Scan A Photo With AI</div>
+      <p class="tiny">🤖 Photos are now read by AI, which handles real book pages (angles, shadows, curves) far better than the old scanner. Frame the whole page with good light, and check the text after each scan.</p>
       <div class="grid2">
         <button type="button" onclick="document.getElementById('scanCam').click()">📷 Scan Next Page</button>
         <button type="button" onclick="document.getElementById('scanGal').click()">🖼️ Existing Photo</button>
@@ -743,6 +743,82 @@ const AI={
       +'{"title":"","author":"","chapter":""}\n\nExcerpt:\n'+text.slice(0,3000);
     const raw=await this.ask(prompt,300);
     return this.extractJson(raw);
+  },
+
+  // Shrinks a photo to a sane size before sending it to the API --
+  // phone camera photos are enormous, and the model reads a downscaled
+  // page just as well while costing a fraction as much to send.
+  fileToJpegBase64(file, maxDim){
+    return new Promise((resolve,reject)=>{
+      const img=new Image();
+      const url=URL.createObjectURL(file);
+      img.onload=()=>{
+        URL.revokeObjectURL(url);
+        let w=img.width, h=img.height;
+        const scale=Math.min(1,(maxDim||1568)/Math.max(w,h));
+        w=Math.round(w*scale); h=Math.round(h*scale);
+        const c=document.createElement('canvas');
+        c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        const dataUrl=c.toDataURL('image/jpeg',.85);
+        resolve(dataUrl.split(',')[1]);
+      };
+      img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('Could not load image')); };
+      img.src=url;
+    });
+  },
+
+  // Sends the actual page PHOTO to the model and gets back a clean
+  // transcription -- the model reads the page directly, no OCR step.
+  async transcribePage(base64Jpeg){
+    const res=await fetch(this.ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:2000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64Jpeg}},
+          {type:'text',text:'Transcribe the text on this book page exactly as written. '
+            +'Preserve paragraph breaks. Skip page numbers and running headers. '
+            +'If part is unreadable, transcribe what you can. Respond with ONLY the transcribed text.'}
+        ]}]
+      })
+    });
+    if(!res.ok) throw new Error('Vision request failed: '+res.status);
+    const data=await res.json();
+    const block=(data.content||[]).find(c=>c.type==='text');
+    if(!block||!block.text.trim()) throw new Error('No transcription returned');
+    return block.text.trim();
+  },
+
+  // One call builds both the study guide AND real flashcards, so a
+  // guide costs one request instead of two.
+  async buildStudyGuide(text, title){
+    const prompt='You are a study guide writer for a scripture/reading study app. '
+      +'Read the passage and respond with ONLY JSON in this exact shape (no other text):\n'
+      +'{"main":"one sentence summary of the main idea","what1":"first key action or teaching",'
+      +'"what2":"second key action or teaching","who":"the actual people/figures involved",'
+      +'"where":"the actual setting or situation","when":"when this applies or took place",'
+      +'"context":"2-3 sentences of real context for this passage",'
+      +'"application":"one concrete way to apply this today",'
+      +'"takeaway":"the single most important takeaway",'
+      +'"question":"one good reflection question",'
+      +'"flashcards":[{"front":"a key term or question","back":"a real, specific answer from the passage"}]}\n'
+      +'Include 5-8 flashcards. Be specific to THIS passage, never generic.\n\n'
+      +'Title: '+title+'\n\nPassage:\n'+text.slice(0,6000);
+    const raw=await this.ask(prompt,1500);
+    return this.extractJson(raw);
+  },
+
+  async coachNotes(summary){
+    const prompt='You are a supportive reading coach. Based on this student\'s stats, '
+      +'write 2-3 short, specific, encouraging coaching notes (plain sentences, no headers). '
+      +'Respond with ONLY a JSON array of strings, like ["note one","note two"].\n\n'+summary;
+    const raw=await this.ask(prompt,400);
+    const notes=this.extractJson(raw);
+    if(!Array.isArray(notes)||!notes.length) throw new Error('Bad notes shape');
+    return notes.map(n=>String(n));
   }
 };
 
@@ -1898,12 +1974,32 @@ const Quiz={
         +'<div class="stat" style="margin:0"><small>SCORE</small><b>'+correct+'/'+qs.length+' ('+acc+'%)</b></div>'
         +'<div class="stat" style="margin:0"><small>XP EARNED</small><b style="color:'+(delta>=0?'var(--green)':'var(--danger)')+'">'+(delta>=0?'+':'')+delta+'</b></div>'
       +'</div><p class="tiny" style="margin-top:10px">'+wpmNote+'</p></div>'
-      +'<div class="branch-card"><h3 style="margin:0 0 8px">🎯 Coach Notes</h3>'
+      +'<div class="branch-card" id="coachNotesCard"><h3 style="margin:0 0 8px">🎯 Coach Notes</h3>'
         +coachNotes.map(n=>'<p class="tiny" style="margin:6px 0">'+n+'</p>').join('')
       +'</div>'
       +'<button class="green" id="qzRetry">Retry This Quiz</button>'
       +'<button onclick="home()">Back to Hub</button>';
     container.querySelector('#qzRetry').onclick=()=>Quiz.render(container,text,wpm,mode);
+    this.aiCoachNotes(container, recordedWpm, acc, mode);
+  },
+
+  // Fires after results render: local notes show instantly, and if the
+  // AI comes back with better ones, they quietly replace the card.
+  // Silent on failure -- the local notes are already on screen.
+  async aiCoachNotes(container, wpm, acc, mode){
+    try{
+      const hist=(state.wpmHistory||[]).slice(-8).map(v=>typeof v==='object'?(v.wpm+' WPM / '+v.acc+'% ('+v.mode+')'):v+' WPM');
+      const cs=state.categoryStats||{};
+      const catLines=Object.keys(cs).map(cat=>cat+': '+cs[cat].correct+'/'+cs[cat].total+' correct');
+      const summary='Latest session: '+wpm+' WPM, '+acc+'% quiz accuracy, mode: '+mode+'.\n'
+        +'Recent history: '+(hist.join('; ')||'none')+'.\n'
+        +'Question-type accuracy: '+(catLines.join('; ')||'none')+'.\n'
+        +'Day streak: '+getStreak()+'. Best WPM ever: '+(state.bestWpm||0)+'.';
+      const notes=await AI.coachNotes(summary);
+      const card=container.querySelector('#coachNotesCard');
+      if(card) card.innerHTML='<h3 style="margin:0 0 8px">🎯 Coach Notes <span class="tiny" style="color:var(--primary)">🤖</span></h3>'
+        +notes.map(n=>'<p class="tiny" style="margin:6px 0">'+esc(n)+'</p>').join('');
+    }catch(e){ /* local notes stay */ }
   },
 
   // Not AI -- this is real tracked history (which question types you
@@ -2221,6 +2317,23 @@ const Scanner={
   },
 
   async runOcr(file){
+    // AI vision first: the model reads the page photo directly, which
+    // handles real-world photos (curved pages, shadows, angles) far
+    // better than OCR ever did here. Tesseract remains as the offline
+    // fallback below if the AI call fails.
+    try{
+      this.setBar(15);
+      this.setStatus('🤖 AI is reading your page photo...');
+      const b64=await AI.fileToJpegBase64(file,1568);
+      this.setBar(40);
+      const text=await AI.transcribePage(b64);
+      this.setBar(100);
+      this.setStatus('🤖 AI read the page. Check the text, then scan the next page or save.');
+      return this.cleanOcr(text);
+    }catch(e){
+      console.warn('AI vision scan failed, falling back to OCR:', e);
+      this.setStatus('AI scan unavailable — falling back to standard OCR...');
+    }
     const ready=await this.waitForTesseract();
     if(!ready){
       this.setStatus('Scanner engine did not load — check your internet connection and try again. You can still type the page in manually.');
@@ -2406,7 +2519,7 @@ const Scanner={
   toggleExperimental(){
     const shown=!$('expSection').classList.contains('hidden');
     $('expSection').classList.toggle('hidden');
-    $('expToggleBtn').textContent=shown?'Show Experimental Photo Scan (not recommended)':'Hide Experimental Photo Scan';
+    $('expToggleBtn').textContent=shown?'📷 Show AI Photo Scan':'Hide AI Photo Scan';
   },
 
   // Looks for "Chapter 1", "Chapter One: The Beginning", "Page 8" etc.
@@ -2813,12 +2926,18 @@ const Rsvp={
    Reading and Lawnmower can pick it straight up.
    ============================================================ */
 const StudyGuide={
-  build(){
+  async build(){
     const text=$('studyText').value.trim();
     const title=$('studyTitle').value.trim()||'Untitled Reading';
     if(!text){ alert('Paste or scan a passage first.'); return; }
 
+    const box=$('guideOut');
+    box.classList.remove('hidden');
+    box.innerHTML='<div class="panel tiny" style="text-align:center">🤖 Studying this passage and writing your guide...</div>';
+
     const ss=sentences(text), kw=keywords(text), who=people(text);
+    // Local fallback guide -- same as the original app. Used untouched
+    // if the AI call fails, and as the base the AI's fields overwrite.
     const g={
       title, text,
       main: ss[0]||text.slice(0,150),
@@ -2835,6 +2954,21 @@ const StudyGuide={
       kw
     };
 
+    let aiFlashcards=null;
+    try{
+      const ai=await AI.buildStudyGuide(text, title);
+      ['main','what1','what2','who','where','when','context','application','takeaway','question'].forEach(k=>{
+        if(ai[k]&&String(ai[k]).trim()) g[k]=String(ai[k]).trim();
+      });
+      if(Array.isArray(ai.flashcards)&&ai.flashcards.length){
+        aiFlashcards=ai.flashcards
+          .filter(c=>c&&c.front&&c.back)
+          .map(c=>({front:String(c.front), back:String(c.back), status:'new'}));
+      }
+    }catch(e){
+      console.warn('AI study guide failed, using local guide:', e);
+    }
+
     // Carry over chapter/page info (and the groupId, so chapter-progress
     // tracking doesn't silently break) if this guide was built from the
     // same text already sitting in the Active Chapter.
@@ -2849,7 +2983,9 @@ const StudyGuide={
     state.guides=(state.guides||0)+1;
     state.wordsRead=(state.wordsRead||0)+wordCount(text);
     upsertLibraryEntry({title, chapter:inheritedChapter, pages:inheritedPages, type:'study guide', text, groupId:inheritedGroupId, pageIndex:inheritedPageIndex, date:Date.now(), guide:g});
-    state.flashcards=kw.map(k=>({front:k.toUpperCase(), back:'Explain this word from the reading in your own words.', status:'new'}));
+    state.flashcards=(aiFlashcards&&aiFlashcards.length)
+      ? aiFlashcards
+      : kw.map(k=>({front:k.toUpperCase(), back:'Explain this word from the reading in your own words.', status:'new'}));
     completeMission('guide');
     save();
     addXp(75,'Study Guide Built');
