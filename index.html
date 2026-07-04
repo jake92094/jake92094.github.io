@@ -190,7 +190,7 @@ label.tiny{display:block;margin:10px 0 0}
       <p id="prestigeLine" class="tiny hidden" style="color:var(--gold);margin:0 0 4px"></p>
       <p>Total XP <span id="xp">0</span> / <span id="nextXp">200</span></p>
       <div class="bar"><div class="fill" id="rankFill"></div></div>
-      <button type="button" id="prestigeBtn" class="hidden" style="margin-top:8px" onclick="prestigeReset()">⭐ Restart at Level 1 (Prestige)</button>
+      <button type="button" id="prestigeBtn" class="hidden" style="margin-top:8px" onclick="prestigeReset()">⭐ Restart at Level 1 (Become a Pro Reader)</button>
     </div>
   </div>
   <div class="grid2">
@@ -208,13 +208,13 @@ label.tiny{display:block;margin:10px 0 0}
     <div class="iconTile" onclick="openView('verses')"><div class="ic">✝️</div><div class="lb">Verse Vault</div></div>
   </div>
   <div class="section">Training Modes</div>
-  <div class="tiny" style="margin:-4px 0 10px">Locked (🔒) modes need an 80%+ quiz pass on the one before them. <span style="color:var(--danger);text-decoration:underline;cursor:pointer" onclick="resetTrainingProgress()">Reset training progress</span></div>
+  <div class="tiny" style="margin:-4px 0 10px">Locked (🔒) modes need a 75%+ quiz pass on the one before them. <span style="color:var(--danger);text-decoration:underline;cursor:pointer" onclick="resetTrainingProgress()">Reset training progress</span></div>
   <div class="iconGrid">
     <div class="iconTile" onclick="openView('grid')" id="cardGrid" title="Warm-up. Always unlocked."><div class="ic">🔢</div><div class="lb">Peripheral Grid</div></div>
     <div class="iconTile" onclick="openView('memory')" title="Bonus warm-up. Always unlocked."><div class="ic">🧩</div><div class="lb">Memorize Number</div></div>
-    <div class="iconTile" onclick="openView('rsvp')" id="cardRsvp" title="Locked until Peripheral Grid is passed at 80%+."><div class="ic">⚡</div><div class="lb">RSVP</div></div>
-    <div class="iconTile" onclick="openView('lawn')" id="cardLawn" title="Locked until RSVP is passed at 80%+."><div class="ic">🐍</div><div class="lb">Lawnmower</div></div>
-    <div class="iconTile" onclick="openView('read')" id="cardRead" title="Locked until Lawnmower is passed at 80%+."><div class="ic">📖</div><div class="lb">Reading Test</div></div>
+    <div class="iconTile" onclick="openView('rsvp')" id="cardRsvp" title="Locked until Peripheral Grid is passed at 75%+."><div class="ic">⚡</div><div class="lb">RSVP</div></div>
+    <div class="iconTile" onclick="openView('lawn')" id="cardLawn" title="Locked until RSVP is passed at 75%+."><div class="ic">🐍</div><div class="lb">Lawnmower</div></div>
+    <div class="iconTile" onclick="openView('read')" id="cardRead" title="Locked until Lawnmower is passed at 75%+."><div class="ic">📖</div><div class="lb">Reading Test</div></div>
   </div>
   <div class="section">Progress</div>
   <div class="iconGrid">
@@ -509,6 +509,8 @@ label.tiny{display:block;margin:10px 0 0}
       <div class="stat"><b id="lbAvgSession">0m</b><small>Avg. Session Length</small></div>
       <div class="stat"><b id="lbBestDay">0</b><small>Best Day (words)</small></div>
     </div>
+    <button type="button" class="danger" onclick="resetSpeedRecords()" style="margin-top:12px">🔄 Reset Speed Records (WPM only)</button>
+    <p class="tiny" style="margin-top:4px">Clears Best WPM, per-mode speed bests, and the trend chart — for when testing pollutes your real numbers. XP, rank, streak, quizzes, and library are untouched.</p>
   </div>
   <div class="section">WPM Trend</div>
   <div class="panel">
@@ -902,13 +904,13 @@ function markToday(){
 // permanent prestige star as a mark of having done it before.
 function prestigeReset(){
   if(state.level<50){ alert('Reach level 50 first.'); return; }
-  if(!confirm('Restart at Level 1? Your XP and rank reset, but everything else -- library, achievements, best WPM, streak -- stays exactly as it is. This adds a permanent Prestige star next to your name.')) return;
+  if(!confirm('Restart at Level 1? Your XP and rank reset, but everything else -- library, achievements, best WPM, streak -- stays exactly as it is. This adds a permanent Pro Reader star next to your name.')) return;
   state.prestige=(state.prestige||0)+1;
   state.xp=0;
   state.level=1;
   save();
   render();
-  alert('Welcome back to Recruit 1 — Prestige '+state.prestige+'.');
+  alert('Welcome back to Recruit 1 — Pro Reader '+state.prestige+'.');
 }
 
 function addXp(n, act){
@@ -946,7 +948,7 @@ function render(){
   if(prestigeBtn) prestigeBtn.classList.toggle('hidden', state.level<50);
   if(prestigeLine){
     if(state.prestige>0){
-      prestigeLine.textContent='⭐'.repeat(Math.min(state.prestige,5))+' Prestige '+state.prestige;
+      prestigeLine.textContent='⭐'.repeat(Math.min(state.prestige,5))+' Pro Reader '+state.prestige;
       prestigeLine.classList.remove('hidden');
     }else{
       prestigeLine.classList.add('hidden');
@@ -1209,6 +1211,24 @@ function saveNote(){
   },500);
 }
 
+// For testing sessions: wipes only speed stats (best WPM, per-mode bests,
+// trend history) so repeated test-reads of the same page don't pollute
+// real records. Deliberately leaves XP, rank, streak, quiz accuracy,
+// library, and everything else untouched.
+function resetSpeedRecords(){
+  if(!confirm('Reset speed records? Best WPM, per-mode speed bests, and the WPM trend chart will clear. XP, rank, streak, quiz accuracy, and your library are NOT affected.')) return;
+  state.bestWpm=0;
+  state.highScores=state.highScores||{};
+  state.highScores.regularWpm=0;
+  state.highScores.lawnWpm=0;
+  state.highScores.rsvpWpm=0;
+  state.wpmHistory=[];
+  save();
+  render();
+  renderLeader();
+  alert('Speed records reset. Go set some real ones.');
+}
+
 function renderMissions(){
   state.missions=state.missions||{};
   $('missionList').innerHTML=MISSIONS.map(m=>
@@ -1465,7 +1485,7 @@ function newBest(key,value,label,lowerIsBetter){
 const MISSIONS=[
   {id:'train', label:'Complete one warm-up (Peripheral Grid)', xp:60},
   {id:'read', label:'Finish one reading session (any mode)', xp:50},
-  {id:'quiz', label:'Pass one quiz at 80%+', xp:100},
+  {id:'quiz', label:'Pass one quiz at 75%+', xp:100},
   {id:'guide', label:'Build one Study Guide', xp:75},
   {id:'verse', label:'Save one verse to your Vault', xp:15}
 ];
@@ -1502,7 +1522,7 @@ const ACHIEVEMENTS=[
   {id:'firstBook', icon:'✅', name:'First Book Finished', desc:'Complete every page of one chapter', check:()=>booksCompleted()>=1},
   {id:'trilogy', icon:'📔', name:'Trilogy', desc:'Complete 3 whole chapters', check:()=>booksCompleted()>=3},
   // Quiz
-  {id:'quizPass', icon:'🧠', name:'Quiz Pass', desc:'Score 80% or higher', check:()=>(state.highScores&&state.highScores.quizAccuracy||0)>=80},
+  {id:'quizPass', icon:'🧠', name:'Quiz Pass', desc:'Score 75% or higher', check:()=>(state.highScores&&state.highScores.quizAccuracy||0)>=75},
   {id:'perfectScore', icon:'🎯', name:'Perfect Score', desc:'Score 100% on a quiz', check:()=>(state.highScores&&state.highScores.quizAccuracy||0)>=100},
   // Speed
   {id:'speedStarter', icon:'⚡', name:'Speed Starter', desc:'Reach 300 WPM', check:()=>(state.bestWpm||0)>=300},
@@ -1573,7 +1593,7 @@ function refreshLocks(){
     const blocker=lockedBy(id);
     card.classList.toggle('locked', !!blocker);
     card.title=blocker
-      ? ('Locked until '+MODE_LABEL[blocker]+' is passed at 80%+.')
+      ? ('Locked until '+MODE_LABEL[blocker]+' is passed at 75%+.')
       : (id==='grid'?'Warm-up. Always unlocked.':'Unlocked — ready to go.');
   });
 }
@@ -1586,7 +1606,7 @@ function resetTrainingProgress(){
   state.modePassed={};
   save();
   refreshLocks();
-  alert('Training progress reset. RSVP, Lawnmower, and Reading are locked again until passed at 80%+, in order.');
+  alert('Training progress reset. RSVP, Lawnmower, and Reading are locked again until passed at 75%+, in order.');
 }
 
 
@@ -1600,7 +1620,7 @@ function openView(id){
   if(!isBuilt(id)){ alert(MODE_LABEL[id]?MODE_LABEL[id]+' is coming in the next build pass.':'That screen is coming soon.'); return; }
   if(MODE_ORDER.includes(id)){
     const blocker=lockedBy(id);
-    if(blocker){ alert('Pass '+MODE_LABEL[blocker]+' at 80% or higher first.'); return; }
+    if(blocker){ alert('Pass '+MODE_LABEL[blocker]+' at 75% or higher first.'); return; }
   }
   document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
   const v=$(id);
@@ -1944,7 +1964,7 @@ const Quiz={
     const s=this.session;
     const qs=s.qs, correct=s.correct, wpm=s.wpm, mode=s.mode, text=s.text, container=s.container;
     const acc=Math.round(correct/qs.length*100);
-    const passed=acc>=80;
+    const passed=acc>=75;
     // Miss questions and two things happen: XP goes negative, and the WPM
     // you actually get credit for is knocked down in proportion to how many
     // you missed. A fast read that you didn't understand isn't a fast read.
@@ -1969,7 +1989,21 @@ const Quiz={
     const key=mode==='lawn'?'lawnWpm':mode==='rsvp'?'rsvpWpm':'regularWpm';
     newBest(key,recordedWpm,mode==='lawn'?'Lawnmower WPM':'Reading WPM');
     newBest('quizAccuracy',acc,'Quiz Accuracy');
-    if(passed){ state.modePassed=state.modePassed||{}; state.modePassed[mode]=true; completeMission('quiz'); }
+    let sessionComplete=false;
+    if(passed){
+      state.modePassed=state.modePassed||{};
+      state.modePassed[mode]=true;
+      completeMission('quiz');
+      // Full session: every built training mode passed. Celebrate it,
+      // count it, then re-lock the whole ladder so the next session is
+      // a fresh climb from the warm-up upward.
+      const allPassed=MODE_ORDER.every(m=>!isBuilt(m)||state.modePassed[m]);
+      if(allPassed){
+        sessionComplete=true;
+        state.sessionsCompleted=(state.sessionsCompleted||0)+1;
+        state.modePassed={};
+      }
+    }
 
     const coachNotes=this.buildCoachNotes(recordedWpm, passed);
     state.wpmHistory=state.wpmHistory||[];
@@ -1978,10 +2012,12 @@ const Quiz={
 
     save();
     addXp(delta, (mode==='lawn'?'Lawnmower':'Reading')+' Quiz '+acc+'%');
+    if(sessionComplete) addXp(100,'Full Training Session Complete — all modes passed');
 
     const wpmNote=passed?('WPM saved: <b>'+recordedWpm+'</b>')
-      :('You read at '+wpm+' WPM, but missed questions bring your recorded speed down to <b>'+recordedWpm+' WPM</b>. Score 80%+ to pass and unlock the next mode.');
-    container.innerHTML='<h2 style="color:var(--gold);text-align:center;letter-spacing:1px">'+(passed?'MISSION COMPLETE':'MISSION INCOMPLETE')+'</h2>'
+      :('You read at '+wpm+' WPM, but missed questions bring your recorded speed down to <b>'+recordedWpm+' WPM</b>. Score 75%+ (3 of 4) to pass and unlock the next mode.');
+    container.innerHTML='<h2 style="color:var(--gold);text-align:center;letter-spacing:1px">'+(sessionComplete?'🏆 SESSION COMPLETE':(passed?'MISSION COMPLETE':'MISSION INCOMPLETE'))+'</h2>'
+      +(sessionComplete?'<p class="tiny" style="text-align:center;color:var(--green)">Every training mode passed — that\'s full session #'+state.sessionsCompleted+'! +100 bonus XP. The ladder has re-locked for your next climb.</p>':'')
       +'<div class="subtitle" style="text-align:center">COMPREHENSION REPORT</div>'
       +'<div class="branch-card"><div class="grid2">'
         +'<div class="stat" style="margin:0"><small>SCORE</small><b>'+correct+'/'+qs.length+' ('+acc+'%)</b></div>'
@@ -2800,7 +2836,7 @@ const Grid={
     clearInterval(this.tick);
     const sec=(Date.now()-this.startTime)/1000;
     const acc=Math.round(25/this.taps*100);
-    const passed=acc>=80;
+    const passed=acc>=75;
     const delta=passed?Math.max(15,Math.round(100-sec*1.2)):-Math.max(5,Math.round((100-acc)/2));
     newBest('gridTime',sec,'Grid Time',true);
     completeMission('train');
