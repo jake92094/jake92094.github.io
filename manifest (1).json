@@ -1,0 +1,17 @@
+{
+  "name": "Read Rise",
+  "short_name": "Readrise",
+  "display": "standalone",
+  "background_color": "#050b14",
+  "theme_color": "#38bdf8",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0 0 100 100'%3E%3Crect%20width='100'%20height='100'%20rx='20'%20fill='%23050b14'/%3E%3Ccircle%20cx='50'%20cy='50'%20r='34'%20fill='none'%20stroke='%2338bdf8'%20stroke-width='6'/%3E%3Ccircle%20cx='50'%20cy='50'%20r='18'%20fill='%2310b981'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": "https://jake92094.github.io/Reading-training-4.8/",
+  "orientation": "portrait",
+  "scope": "/Reading-training-4.8/"
+}
