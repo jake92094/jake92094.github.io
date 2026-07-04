@@ -1045,6 +1045,29 @@ function markChapterProgress(){
   checkChapterComplete(ch.groupId);
 }
 
+// ⭐ Mastery: a page becomes "mastered" once its quiz has been PASSED in
+// two different reading modes. Never required for anything -- completion
+// stays one read -- this is the optional gold-star chase on top.
+// Only tracked for single-page sessions, since a whole-chapter read
+// can't fairly attribute a pass to individual pages.
+function markPageMastery(mode){
+  const ch=state.activeChapter;
+  if(!ch||!ch.groupId||ch.pageIndex===null||ch.pageIndex===undefined) return null;
+  const prog=state.chapterProgress&&state.chapterProgress[ch.groupId];
+  if(!prog) return null;
+  prog.mastery=prog.mastery||{};
+  const modes=prog.mastery[ch.pageIndex]=prog.mastery[ch.pageIndex]||[];
+  const before=modes.length;
+  if(!modes.includes(mode)) modes.push(mode);
+  save();
+  if(modes.length>=2 && before<2) return {newlyMastered:true, page:ch.pageIndex+1};
+  return null;
+}
+
+function pageIsMastered(prog,i){
+  return !!(prog&&prog.mastery&&prog.mastery[i]&&prog.mastery[i].length>=2);
+}
+
 // Library entries don't store their own copy of progress -- they just
 // share the groupId, so this is always reading the single source of
 // truth instead of two copies that could drift out of sync.
@@ -1052,8 +1075,10 @@ function chapterProgressText(groupId){
   const prog=state.chapterProgress&&state.chapterProgress[groupId];
   if(!prog||!prog.pageCount) return '';
   const done=prog.readPages.length, total=prog.pageCount;
-  if(done>=total) return 'All '+total+' pages read — chapter complete! ✅';
-  return done+' of '+total+' pages read — '+(total-done)+' more to finish this chapter.';
+  const mastered=Array.from({length:total},(_,i)=>i).filter(i=>pageIsMastered(prog,i)).length;
+  const starNote=mastered?' • '+mastered+' mastered ⭐':'';
+  if(done>=total) return 'All '+total+' pages read — chapter complete! ✅'+starNote;
+  return done+' of '+total+' pages read — '+(total-done)+' more to finish this chapter.'+starNote;
 }
 
 function checkChapterComplete(groupId){
@@ -1170,10 +1195,11 @@ function renderChapterHeatMap(){
   const cells=Array.from({length:prog.pageCount},(_,i)=>{
     const isRead=prog.readPages.includes(i);
     const isCurrent=ch.pageIndex===i;
+    const mastered=pageIsMastered(prog,i);
     const bg=isCurrent?'var(--gold)':(isRead?'var(--green)':'rgba(148,163,184,.25)');
-    return '<div title="Page '+(i+1)+(isRead?' — read':(isCurrent?' — current':' — not read yet'))+'" style="flex:1;min-width:14px;height:14px;border-radius:3px;background:'+bg+'"></div>';
+    return '<div title="Page '+(i+1)+(mastered?' — mastered ⭐':(isRead?' — read':(isCurrent?' — current':' — not read yet')))+'" style="flex:1;min-width:14px;height:14px;border-radius:3px;background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1">'+(mastered?'⭐':'')+'</div>';
   }).join('');
-  el.innerHTML='<div class="tiny" style="margin-bottom:4px;color:var(--muted)">Chapter progress by page</div>'
+  el.innerHTML='<div class="tiny" style="margin-bottom:4px;color:var(--muted)">Chapter progress by page — ⭐ = mastered (quiz passed in 2 modes)</div>'
     +'<div style="display:flex;gap:3px;flex-wrap:wrap">'+cells+'</div>';
 }
 
@@ -2013,11 +2039,14 @@ const Quiz={
     save();
     addXp(delta, (mode==='lawn'?'Lawnmower':'Reading')+' Quiz '+acc+'%');
     if(sessionComplete) addXp(100,'Full Training Session Complete — all modes passed');
+    const mastery=passed?markPageMastery(mode):null;
+    if(mastery&&mastery.newlyMastered) addXp(50,'Page '+mastery.page+' Mastered ⭐');
 
     const wpmNote=passed?('WPM saved: <b>'+recordedWpm+'</b>')
       :('You read at '+wpm+' WPM, but missed questions bring your recorded speed down to <b>'+recordedWpm+' WPM</b>. Score 75%+ (3 of 4) to pass and unlock the next mode.');
     container.innerHTML='<h2 style="color:var(--gold);text-align:center;letter-spacing:1px">'+(sessionComplete?'🏆 SESSION COMPLETE':(passed?'MISSION COMPLETE':'MISSION INCOMPLETE'))+'</h2>'
       +(sessionComplete?'<p class="tiny" style="text-align:center;color:var(--green)">Every training mode passed — that\'s full session #'+state.sessionsCompleted+'! +100 bonus XP. The ladder has re-locked for your next climb.</p>':'')
+      +(mastery&&mastery.newlyMastered?'<p class="tiny" style="text-align:center;color:var(--gold)">⭐ Page '+mastery.page+' MASTERED — quiz passed in 2 different modes! +50 XP</p>':'')
       +'<div class="subtitle" style="text-align:center">COMPREHENSION REPORT</div>'
       +'<div class="branch-card"><div class="grid2">'
         +'<div class="stat" style="margin:0"><small>SCORE</small><b>'+correct+'/'+qs.length+' ('+acc+'%)</b></div>'
