@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.jake92094.readrise",
+        "sha256_cert_fingerprints": ["5D:59:92:1F:BF:F9:F2:7E:32:54:F9:90:03:89:B5:B2:F4:F3:B7:D8:B7:DC:B1:C7:13:4E:EE:36:64:B4:A9:D7"]
+      }
+    }]
