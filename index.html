@@ -779,7 +779,9 @@ const AI={
         max_tokens:2000,
         messages:[{role:'user',content:[
           {type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64Jpeg}},
-          {type:'text',text:'Transcribe the text on this book page exactly as written. '
+          {type:'text',text:'This is an OCR/accessibility feature in a personal reading-practice app. '
+            +'The user photographed a page from their own physical book to practice reading it. '
+            +'Transcribe the text on this page exactly as written, like an OCR tool would. '
             +'Preserve paragraph breaks. Skip page numbers and running headers. '
             +'If part is unreadable, transcribe what you can. Respond with ONLY the transcribed text.'}
         ]}]
@@ -789,7 +791,14 @@ const AI={
     const data=await res.json();
     const block=(data.content||[]).find(c=>c.type==='text');
     if(!block||!block.text.trim()) throw new Error('No transcription returned');
-    return block.text.trim();
+    const text=block.text.trim();
+    // If the model declined instead of transcribing, treat it as a
+    // failure so the app falls back to the offline scanner -- a refusal
+    // must never get saved as if it were the page's text.
+    if(text.length<300 && /copyright|not able to|can't reproduce|cannot reproduce|unable to/i.test(text)){
+      throw new Error('Model declined transcription');
+    }
+    return text;
   },
 
   // One call builds both the study guide AND real flashcards, so a
@@ -3406,4 +3415,3 @@ if(state.justMigrated){
 </script>
 </body>
 </html>
-
