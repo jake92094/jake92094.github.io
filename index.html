@@ -321,7 +321,7 @@ label.tiny{display:block;margin:10px 0 0}
         <button type="button" onclick="document.getElementById('scanCam').click()">📷 Scan Next Page</button>
         <button type="button" onclick="document.getElementById('scanGal').click()">🖼️ Existing Photo</button>
       </div>
-      <button type="button" onclick="Scanner.openLiveCamera()">🎥 Live Camera (built into the app)</button>
+      <button type="button" onclick="Scanner.openLiveCamera()">🎥 Batch Scan — camera stays open, snap page after page</button>
       <input id="scanCam" class="fileInput" type="file" accept="image/*" capture="environment" onchange="Scanner.camChange(event)">
       <input id="scanGal" class="fileInput" type="file" accept="image/*" onchange="Scanner.galChange(event)">
       <div style="height:8px;border-radius:999px;background:#0f172a;border:1px solid var(--border);overflow:hidden;margin:6px 0 4px"><div id="scanBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--primary),var(--green));transition:width .15s"></div></div>
@@ -342,9 +342,10 @@ label.tiny{display:block;margin:10px 0 0}
 <div id="liveCameraOverlay" class="hidden" style="position:fixed;inset:0;z-index:5000;background:#000;display:flex;flex-direction:column">
   <video id="scanLiveVideo" autoplay playsinline muted style="flex:1;width:100%;object-fit:cover;background:#000"></video>
   <div style="padding:16px;background:rgba(2,6,23,.92);border-top:1px solid var(--border)">
-    <p class="tiny" style="text-align:center;color:#94a3b8;margin:0 0 10px">Frame the whole page, hold steady, then capture.</p>
+    <p class="tiny" style="text-align:center;color:#94a3b8;margin:0 0 6px">Batch mode: frame a page, capture, turn the page, capture again — the camera stays open.</p>
+    <p id="liveScanStatus" class="tiny" style="text-align:center;color:var(--green);margin:0 0 10px;font-weight:800">Ready — 0 pages captured</p>
     <div class="grid2">
-      <button class="danger" onclick="Scanner.closeLiveCamera()">Cancel</button>
+      <button class="danger" onclick="Scanner.closeLiveCamera()">✅ Done</button>
       <button class="green" onclick="Scanner.captureLiveFrame()">📸 Capture Page</button>
     </div>
   </div>
@@ -2880,6 +2881,12 @@ const Scanner={
   },
 
   liveStream:null,
+  batchQueue:[],
+  batchCaptured:0,
+  batchProcessed:0,
+  batchProcessing:false,
+
+  setLiveStatus(msg){ const el=$('liveScanStatus'); if(el) el.textContent=msg; },
 
   async openLiveCamera(){
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
@@ -2887,11 +2894,18 @@ const Scanner={
       return;
     }
     try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+      // Ask for a high-res stream with continuous autofocus where the
+      // phone supports it -- the single biggest fix for blurry captures.
+      const stream=await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:'environment', width:{ideal:2560}, height:{ideal:1440}, advanced:[{focusMode:'continuous'}]},
+        audio:false
+      });
       this.liveStream=stream;
+      this.batchQueue=[]; this.batchCaptured=0; this.batchProcessed=0;
       const video=$('scanLiveVideo');
       video.srcObject=stream;
       await video.play();
+      this.setLiveStatus('Ready — 0 pages captured');
       $('liveCameraOverlay').classList.remove('hidden');
     }catch(e){
       console.error(e);
@@ -2902,18 +2916,40 @@ const Scanner={
   closeLiveCamera(){
     if(this.liveStream){ this.liveStream.getTracks().forEach(t=>t.stop()); this.liveStream=null; }
     $('liveCameraOverlay').classList.add('hidden');
+    const pending=this.batchQueue.length+(this.batchProcessing?1:0);
+    if(this.batchCaptured>0){
+      this.setStatus(this.batchCaptured+' page'+(this.batchCaptured===1?'':'s')+' captured.'+(pending>0?' Still reading '+pending+' in the background — they\'ll appear below as they finish.':' All processed — check the text below.'));
+    }
   },
 
+  // Batch capture: grab the frame, queue it, and keep the camera open so
+  // the next page can be shot immediately. A single background worker
+  // reads queued pages one at a time (order preserved) while you keep
+  // turning pages and snapping.
   async captureLiveFrame(){
     const video=$('scanLiveVideo');
-    if(!video.videoWidth){ alert('Camera is still starting up — wait a second and try again.'); return; }
+    if(!video.videoWidth){ this.setLiveStatus('Camera still starting — one sec...'); return; }
     const c=document.createElement('canvas');
     c.width=video.videoWidth;
     c.height=video.videoHeight;
     c.getContext('2d').drawImage(video,0,0,c.width,c.height);
     const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));
-    this.closeLiveCamera();
-    this.addFromFile(blob);
+    this.batchCaptured++;
+    this.batchQueue.push(blob);
+    this.setLiveStatus('📸 '+this.batchCaptured+' captured • '+this.batchProcessed+' read — turn the page and capture the next');
+    this.processBatchQueue();
+  },
+
+  async processBatchQueue(){
+    if(this.batchProcessing) return;
+    this.batchProcessing=true;
+    while(this.batchQueue.length){
+      const blob=this.batchQueue.shift();
+      await this.addFromFile(blob);
+      this.batchProcessed++;
+      this.setLiveStatus('📸 '+this.batchCaptured+' captured • '+this.batchProcessed+' read — keep going or tap Done');
+    }
+    this.batchProcessing=false;
   },
 
   resetAll(){
