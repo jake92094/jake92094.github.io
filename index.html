@@ -2663,7 +2663,7 @@ const Scanner={
         const when=p.addedDate?new Date(p.addedDate).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):null;
         return '<div class="scanPageCard"><h4>Page '+(i+1)+'</h4>'
           +'<p class="tiny" style="color:var(--muted);margin:2px 0 8px">'+words+' words'+(when?' • added '+esc(when):'')+'</p>'
-          +'<textarea oninput="Scanner.editPage('+i+',this.value)">'+esc(p.text)+'</textarea>'
+          +'<textarea oninput="Scanner.editPage('+i+',this.value)" onchange="Scanner.renderPages()">'+esc(p.text)+'</textarea>'
           +'<div class="scanPageBtns">'
             +'<button onclick="Scanner.rescan('+i+')">Rescan This Page</button>'
             +'<button class="danger" onclick="Scanner.deletePage('+i+')">Delete Page</button>'
@@ -2720,7 +2720,10 @@ const Scanner={
     alert('Loaded just Page '+(i+1)+' as your Active Chapter — Reading, Lawnmower, and Study Guide will use only this page until you load something else.');
   },
 
-  editPage(i,val){ if(this.pages[i]) this.pages[i].text=val; this.renderPages(); },
+  // Update text quietly while typing -- rebuilding the list on every
+  // keystroke destroyed the textarea mid-edit (cursor lost, scroll
+  // jumped, stale text reappearing). The list refreshes on blur instead.
+  editPage(i,val){ if(this.pages[i]) this.pages[i].text=val; },
   deletePage(i){ this.pages.splice(i,1); this.renderPages(); },
 
   firstLine(text){
