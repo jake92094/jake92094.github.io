@@ -174,6 +174,63 @@ label.tiny{display:block;margin:10px 0 0}
 </style>
 </head>
 <body>
+<div id="mottoSplash" style="position:fixed;inset:0;z-index:9999;background:radial-gradient(ellipse at 50% 25%, #101c3a 0%, #070d1c 45%, #03060d 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;transition:opacity .8s ease, transform .8s ease" onclick="this.remove()">
+  <div class="nebula" style="left:-15%;top:8%;background:radial-gradient(circle,#1d4ed8 0%,transparent 70%)"></div>
+  <div class="nebula" style="right:-18%;bottom:12%;background:radial-gradient(circle,#7c3aed 0%,transparent 70%);animation-delay:1.4s"></div>
+  <div id="splashStars" style="position:absolute;inset:0"></div>
+
+  <!-- luminous cross with god-rays behind the words -->
+  <div class="crossWrap">
+    <div class="crossRays"></div>
+    <div class="crossV"></div>
+    <div class="crossH"></div>
+  </div>
+
+  <!-- halo logo, small, top-left -->
+  <div class="splashLogo"><div style="width:16px;height:16px;border-radius:50%;background:#10b981"></div></div>
+
+  <div class="splashWords">
+    <div class="splashWord" style="color:#38bdf8;animation-delay:.3s;text-shadow:0 0 30px rgba(56,189,248,.8),0 0 70px rgba(56,189,248,.4)">MOVE.</div>
+    <div class="splashWord" style="color:#f1f5f9;animation-delay:.85s;text-shadow:0 0 26px rgba(241,245,249,.7),0 0 60px rgba(241,245,249,.3)">STOP.</div>
+    <div class="splashWord" style="color:#facc15;animation-delay:1.4s;text-shadow:0 0 30px rgba(250,204,21,.8),0 0 70px rgba(250,204,21,.4)">PRAY.</div>
+  </div>
+
+  <div class="splashSig">
+    <div style="color:#facc15;font-size:17px;letter-spacing:4px;font-weight:800">KEEP MOVING — IT'S NEVER OVER.</div>
+    <div style="color:#64748b;font-size:13px;letter-spacing:2px;margin-top:7px">— JAKE MALDONADO</div>
+  </div>
+</div>
+<script>
+(function(){
+  const box=document.getElementById('splashStars');
+  if(!box) return;
+  for(let i=0;i<70;i++){
+    const s=document.createElement('div');
+    const sz=Math.random()*2.4+0.6;
+    s.style.cssText='position:absolute;border-radius:50%;background:#fff;'
+      +'width:'+sz+'px;height:'+sz+'px;left:'+(Math.random()*100)+'%;top:'+(Math.random()*100)+'%;'
+      +'opacity:'+(Math.random()*.6+.2)+';animation:starTwinkle '+(Math.random()*2.4+1.4)+'s ease-in-out '+(Math.random()*2)+'s infinite';
+    box.appendChild(s);
+  }
+})();
+</script>
+<style>
+.nebula{position:absolute;width:70vw;height:70vw;filter:blur(46px);opacity:.32;animation:nebDrift 6s ease-in-out infinite alternate}
+.crossWrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-56%);width:0;height:0;animation:crossBreath 3.4s ease-in-out infinite}
+.crossV{position:absolute;left:-11px;top:-190px;width:22px;height:400px;background:linear-gradient(180deg,transparent,rgba(250,204,21,.30) 22%,rgba(255,255,255,.42) 50%,rgba(250,204,21,.30) 78%,transparent);filter:blur(7px);border-radius:12px}
+.crossH{position:absolute;left:-125px;top:-96px;width:250px;height:20px;background:linear-gradient(90deg,transparent,rgba(250,204,21,.30) 22%,rgba(255,255,255,.42) 50%,rgba(250,204,21,.30) 78%,transparent);filter:blur(7px);border-radius:12px}
+.crossRays{position:absolute;left:-190px;top:-190px;width:380px;height:380px;border-radius:50%;background:conic-gradient(from 0deg, rgba(250,204,21,.10), transparent 12%, rgba(250,204,21,.10) 25%, transparent 37%, rgba(250,204,21,.10) 50%, transparent 62%, rgba(250,204,21,.10) 75%, transparent 87%, rgba(250,204,21,.10));filter:blur(3px);animation:raysSpin 14s linear infinite}
+.splashLogo{position:absolute;top:22px;left:22px;width:44px;height:44px;border-radius:50%;border:4px solid #38bdf8;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(56,189,248,.5);opacity:.9}
+.splashWords{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px}
+.splashWord{font-size:64px;font-weight:900;letter-spacing:8px;opacity:0;animation:splashStare 2.6s cubic-bezier(.2,.8,.3,1) forwards}
+.splashSig{position:absolute;bottom:64px;left:0;right:0;text-align:center;opacity:0;animation:sigIn .8s ease 2s forwards}
+@keyframes splashStare{0%{opacity:0;transform:scale(.7);filter:blur(6px)}22%{opacity:1;transform:scale(1);filter:blur(0)}100%{opacity:1;transform:scale(1.1)}}
+@keyframes starTwinkle{0%,100%{opacity:.15}50%{opacity:.9}}
+@keyframes nebDrift{from{transform:translateY(0) scale(1)}to{transform:translateY(-26px) scale(1.08)}}
+@keyframes crossBreath{0%,100%{opacity:.55}50%{opacity:.95}}
+@keyframes raysSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes sigIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+</style>
 
 <div id="menu" class="view">
   <h1>TRAINING HUB</h1>
@@ -1095,6 +1152,8 @@ function importData(ev){
     state=parsed;
     save();
     applyTheme(state.theme);
+    // Motto splash: hold long enough to read it, then fade into the app.
+    setTimeout(()=>{ const s=$('mottoSplash'); if(s){ s.style.opacity='0'; s.style.transform='scale(1.08)'; setTimeout(()=>s.remove(),850); } }, 3400);
     render();
     refreshLocks();
     handleSharedText();
@@ -3965,4 +4024,3 @@ if(state.justMigrated){
 </script>
 </body>
 </html>
-
