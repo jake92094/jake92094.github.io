@@ -2261,6 +2261,12 @@ const Reader={
     if(mode==='lawn'){ this.renderLawn(s); }
     else { this.renderRead(s); }
 
+    // Jump straight to the text the moment the timer starts -- hunting
+    // and scrolling for the first line was costing real seconds on the
+    // clock before any reading happened.
+    const boxEl=$(mode==='lawn'?'lawnReading':'reading');
+    if(boxEl) setTimeout(()=>boxEl.scrollIntoView({behavior:'smooth',block:'start'}),60);
+
     this.updateStats(s);
     s.tick=setInterval(()=>this.updateStats(s),150);
    }catch(e){
@@ -3162,6 +3168,7 @@ const Rsvp={
     $('rsvpPauseBtn').classList.remove('hidden');
     $('quizRsvp').classList.add('hidden');
     $('rsvpWord').textContent=this.words[this.idx++];
+    setTimeout(()=>$('rsvpWord').scrollIntoView({behavior:'smooth',block:'center'}),60);
     this.timer=setInterval(()=>this.tick(), 60000/this.speed);
   },
 
@@ -3676,4 +3683,3 @@ if(state.justMigrated){
 </script>
 </body>
 </html>
-
