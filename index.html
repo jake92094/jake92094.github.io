@@ -2722,6 +2722,8 @@ const Scanner={
           +'<p class="tiny" style="color:var(--muted);margin:2px 0 8px">'+words+' words'+(when?' • added '+esc(when):'')+'</p>'
           +'<textarea oninput="Scanner.editPage('+i+',this.value)" onchange="Scanner.renderPages()">'+esc(p.text)+'</textarea>'
           +'<div class="scanPageBtns">'
+            +'<button onclick="Scanner.movePage('+i+',-1)"'+(i===0?' disabled':'')+'>⬆ Move Up</button>'
+            +'<button onclick="Scanner.movePage('+i+',1)"'+(i===this.pages.length-1?' disabled':'')+'>⬇ Move Down</button>'
             +'<button onclick="Scanner.rescan('+i+')">Rescan This Page</button>'
             +'<button class="danger" onclick="Scanner.deletePage('+i+')">Delete Page</button>'
           +'</div>'
@@ -2782,6 +2784,14 @@ const Scanner={
   // jumped, stale text reappearing). The list refreshes on blur instead.
   editPage(i,val){ if(this.pages[i]) this.pages[i].text=val; },
   deletePage(i){ this.pages.splice(i,1); this.renderPages(); },
+  // Fix scrambled import order by hand: swap a page with its neighbor.
+  movePage(i,dir){
+    const j=i+dir;
+    if(j<0||j>=this.pages.length) return;
+    const t=this.pages[i]; this.pages[i]=this.pages[j]; this.pages[j]=t;
+    save();
+    this.renderPages();
+  },
 
   firstLine(text){
     const l=String(text||'').split('\n').map(x=>x.trim()).filter(Boolean)[0];
@@ -3022,7 +3032,14 @@ const Scanner={
     // Whole-chapter import: select many photos at once and every one
     // becomes a page, in the order the pictures were taken (Lens and
     // camera apps save sequentially, so timestamp order = page order).
-    files.sort((a,b)=>(a.lastModified||0)-(b.lastModified||0));
+    // Order by capture time; when timestamps tie (Lens exports whole
+    // batches in the same second) fall back to numeric-aware filename
+    // order so page10 sorts after page2, not before it.
+    files.sort((a,b)=>{
+      const d=(a.lastModified||0)-(b.lastModified||0);
+      if(d) return d;
+      return String(a.name||'').localeCompare(String(b.name||''), undefined, {numeric:true, sensitivity:'base'});
+    });
     (async()=>{
       for(let i=0;i<files.length;i++){
         this.setStatus(files.length>1?('Reading photo '+(i+1)+' of '+files.length+'...'):'Got the photo. Starting scan...');
