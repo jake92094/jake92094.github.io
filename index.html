@@ -1317,7 +1317,7 @@ function handleSharedText(){
     const box=$('scanManualText');
     if(box){
       box.value=shared;
-      Scanner.setStatus('📤 Text received from another app — check it, then tap Add This Page.');
+      Scanner.setStatus('📤 Text received from another app — tap Add This Page (multi-page blocks will offer to auto-split).');
       setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'center'}),300);
     }
   }catch(e){}
@@ -2943,10 +2943,57 @@ const Scanner={
     return await new Promise(r=>c.toBlob(r,'image/jpeg',.95));
   },
 
+  // ✂️ Auto-split: a big shared/pasted block often contains many pages.
+  // Split on the strongest signal available: explicit page markers
+  // ("Page 12", "--- 12 ---", form-feed chars) first; failing that,
+  // double blank lines between big text runs. Returns an array of
+  // page-sized chunks, or null if it doesn't look multi-page.
+  autoSplitPages(text){
+    const t=String(text||'').replace(/\r/g,'');
+    if(t.length<600) return null;
+    // Marker split: lines that are just a page number / "Page N"
+    const markerRe=/\n\s*(?:[-—_=*]{0,4}\s*)?(?:page\s+)?\d{1,4}(?:\s*[-—_=*]{0,4})?\s*\n/gi;
+    const byMarker=t.split(markerRe).map(s=>s.trim()).filter(s=>s.length>200);
+    if(byMarker.length>=2) return byMarker;
+    // Blank-line split: two-or-more newlines between substantial runs
+    const byGap=t.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
+    if(byGap.length>=2){
+      // Merge tiny fragments (headings, stray lines) into the chunk after them
+      const pages=[];
+      let buf='';
+      byGap.forEach(chunk=>{
+        buf=buf?buf+'\n\n'+chunk:chunk;
+        if(buf.length>=350){ pages.push(buf); buf=''; }
+      });
+      if(buf) pages.length?pages[pages.length-1]+='\n\n'+buf:pages.push(buf);
+      if(pages.length>=2) return pages;
+    }
+    return null;
+  },
+
+  addManualSplit(chunks){
+    if(!this.pages.length) this.groupId='ch_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    chunks.forEach(c=>{
+      this.pages.push({text:this.finalizePageText(c), addedDate:Date.now()});
+      state.totalPagesAdded=(state.totalPagesAdded||0)+1;
+    });
+    save();
+    this.renderPages();
+    this.renderBookPicker();
+    const box=$('scanManualText');
+    if(box) box.value='';
+    this.setStatus('✂️ Split into '+chunks.length+' pages — check them below, reorder if needed, then save.');
+  },
+
   addManualPage(){
     const box=$('scanManualText');
     const raw=box.value.trim();
     if(!raw){ alert('Type or paste some text first.'); return; }
+    const chunks=this.autoSplitPages(raw);
+    if(chunks&&confirm('This looks like '+chunks.length+' pages. Split it into '+chunks.length+' separate pages?\n\n(Cancel keeps it as one page.)')){
+      this.addManualSplit(chunks);
+      return;
+    }
     if(!this.pages.length) this.groupId='ch_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
     this.pages.push({text:this.finalizePageText(raw), addedDate:Date.now()});
     state.totalPagesAdded=(state.totalPagesAdded||0)+1;
