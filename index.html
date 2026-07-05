@@ -1097,6 +1097,7 @@ function importData(ev){
     applyTheme(state.theme);
     render();
     refreshLocks();
+    handleSharedText();
     alert('Backup restored.');
   };
   reader.readAsText(file);
@@ -1301,6 +1302,25 @@ function clearVocabBank(){
   state.vocabBank=[];
   save();
   renderVocabBank();
+}
+
+// 📤 Share target: when another app (like a scanner's "share as text")
+// sends text to this app, it arrives as URL params. Drop it straight
+// into the Add This Page box, ready to add -- no copy-paste needed.
+function handleSharedText(){
+  try{
+    const p=new URLSearchParams(location.search);
+    const shared=[p.get('text'),p.get('title'),p.get('url')].filter(Boolean).join('\n').trim();
+    if(!shared||shared.length<20) return;
+    history.replaceState({},'',location.pathname);
+    openView('scan');
+    const box=$('scanManualText');
+    if(box){
+      box.value=shared;
+      Scanner.setStatus('📤 Text received from another app — check it, then tap Add This Page.');
+      setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'center'}),300);
+    }
+  }catch(e){}
 }
 
 function setPageSpan(v, mode){
@@ -3049,11 +3069,17 @@ const Scanner={
       return String(a.name||'').localeCompare(String(b.name||''), undefined, {numeric:true, sensitivity:'base'});
     });
     (async()=>{
+      let failed=0;
       for(let i=0;i<files.length;i++){
         this.setStatus(files.length>1?('Reading photo '+(i+1)+' of '+files.length+'...'):'Got the photo. Starting scan...');
-        await this.addFromFile(files[i]);
+        // One corrupt/huge photo must never kill the rest of the batch --
+        // catch per-file, keep going, report the casualties at the end.
+        try{ await this.addFromFile(files[i]); }
+        catch(e){ failed++; console.warn('Photo '+(i+1)+' failed:',e); this.busy=false; }
       }
-      if(files.length>1) this.setStatus('All '+files.length+' photos read — check the pages below, then save the chapter.');
+      if(files.length>1) this.setStatus(
+        failed?((files.length-failed)+' of '+files.length+' photos read — '+failed+' failed (blurry/too large?). Re-add just those with Existing Photos.')
+              :('All '+files.length+' photos read — check the pages below, then save the chapter.'));
     })();
   },
 
