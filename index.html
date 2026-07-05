@@ -2715,7 +2715,8 @@ const Scanner={
     if(!this.pages.length){
       box.innerHTML='<p class="tiny">No pages scanned yet.</p>';
     }else{
-      box.innerHTML=this.pages.map((p,i)=>{
+      box.innerHTML=(this.pages.length>1?'<button type="button" onclick="Scanner.reversePages()">🔃 Reverse Page Order (fixes backwards imports)</button>':'')
+        +this.pages.map((p,i)=>{
         const words=this.pageWords(p.text);
         const when=p.addedDate?new Date(p.addedDate).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):null;
         return '<div class="scanPageCard"><h4>Page '+(i+1)+'</h4>'
@@ -2784,6 +2785,13 @@ const Scanner={
   // jumped, stale text reappearing). The list refreshes on blur instead.
   editPage(i,val){ if(this.pages[i]) this.pages[i].text=val; },
   deletePage(i){ this.pages.splice(i,1); this.renderPages(); },
+  // One tap fixes a fully backwards import (gallery pickers often hand
+  // photos over newest-first).
+  reversePages(){
+    this.pages.reverse();
+    save();
+    this.renderPages();
+  },
   // Fix scrambled import order by hand: swap a page with its neighbor.
   movePage(i,dir){
     const j=i+dir;
