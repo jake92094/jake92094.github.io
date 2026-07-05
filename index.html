@@ -365,6 +365,7 @@ label.tiny{display:block;margin:10px 0 0}
     <button class="green" onclick="StudyGuide.build()">Build Study Guide</button>
   </div>
   <div id="guideOut" class="hidden"></div>
+  <div id="vocabBankPanel"></div>
 </div>
 
 <div id="flash" class="view hidden">
@@ -737,7 +738,9 @@ const AI={
       +'text, in this exact shape: '
       +'[{"q":"question text","options":["a","b","c","d"],"a":0,"cat":"mainIdea","explain":"why this is correct"}] '
       +'where "a" is the index (0-3) of the correct option, and "cat" is one of: '
-      +'mainIdea, support, takeaway, keyword.\n\nPassage:\n'+text.slice(0,6000);
+      +'mainIdea, support, takeaway, keyword. On the keyword question ONLY, also '
+      +'include "term":"the vocabulary word itself" and make its correct option a '
+      +'clear definition of that word.\n\nPassage:\n'+text.slice(0,6000);
     const raw=await this.ask(prompt,1200);
     const qs=this.extractJson(raw);
     if(!Array.isArray(qs)||!qs.length) throw new Error('Bad quiz shape');
@@ -1270,6 +1273,36 @@ function loadSpecificPage(mode, value){
   refreshActiveChapterBanner();
 }
 
+function renderVocabBank(){
+  const el=$('vocabBankPanel');
+  if(!el) return;
+  const bank=state.vocabBank||[];
+  if(!bank.length){ el.innerHTML=''; return; }
+  el.innerHTML='<div class="panel" style="margin-top:14px">'
+    +'<div class="section">📚 Word Bank ('+bank.length+')</div>'
+    +'<p class="tiny">Every quiz\'s vocabulary word lands here automatically — your personal dictionary, built by reading.</p>'
+    +bank.map(v=>'<div class="branch-card" style="margin:8px 0"><b style="color:var(--primary)">'+esc(v.word)+'</b>'
+      +'<p class="tiny" style="margin:4px 0">'+esc(v.def)+'</p>'
+      +(v.source?'<p class="tiny" style="color:var(--muted);margin:0">from '+esc(v.source)+'</p>':'')
+    +'</div>').join('')
+    +'<button class="green" onclick="studyVocabBank()">🃏 Study These as Flashcards</button>'
+    +'<button class="danger" onclick="clearVocabBank()">Clear Word Bank</button>'
+    +'</div>';
+}
+function studyVocabBank(){
+  const bank=state.vocabBank||[];
+  if(!bank.length){ alert('No words banked yet — take some quizzes first.'); return; }
+  state.flashcards=bank.map(v=>({front:v.word.toUpperCase(), back:v.def, status:'new'}));
+  save();
+  openView('flash');
+}
+function clearVocabBank(){
+  if(!confirm('Clear all '+((state.vocabBank||[]).length)+' banked words?')) return;
+  state.vocabBank=[];
+  save();
+  renderVocabBank();
+}
+
 function setPageSpan(v, mode){
   state.pageSpan=Math.max(1,Math.min(3,parseInt(v,10)||1));
   save();
@@ -1795,6 +1828,7 @@ function home(){
   refreshLocks();
 }
 function openView(id){
+  if(id==='study') setTimeout(renderVocabBank,0);
   if(!isBuilt(id)){ alert(MODE_LABEL[id]?MODE_LABEL[id]+' is coming in the next build pass.':'That screen is coming soon.'); return; }
   if(MODE_ORDER.includes(id)){
     const blocker=lockedBy(id);
@@ -2038,6 +2072,7 @@ const Quiz={
     let qs;
     try{
       qs=await AI.generateQuiz(text);
+      this.captureVocab(qs);
     }catch(e){
       qs=this.build(text); // fallback: original local quiz, unchanged
     }
@@ -2046,6 +2081,28 @@ const Quiz={
   },
 
   CATEGORY_LABELS:{mainIdea:'Main Idea',support:'Supporting Detail',takeaway:'Takeaway',keyword:'Key Word',fillBlank:'Fill in the Blank'},
+
+  // 📚 Word Bank: every AI quiz includes one vocabulary question. The
+  // word + its correct definition get banked here automatically, tagged
+  // with where they came from, building a study list as a side effect
+  // of normal reading. Deduped by word; capped so it can't balloon.
+  captureVocab(qs){
+    try{
+      const ch=state.activeChapter||{};
+      const source=[ch.title,ch.pages?('p. '+ch.pages):''].filter(Boolean).join(' ');
+      state.vocabBank=state.vocabBank||[];
+      (qs||[]).forEach(q=>{
+        if(q.cat!=='keyword'||!q.term||!q.options||q.a===undefined) return;
+        const word=String(q.term).trim();
+        const def=String(q.options[q.a]||'').trim();
+        if(!word||!def) return;
+        if(state.vocabBank.some(v=>v.word.toLowerCase()===word.toLowerCase())) return;
+        state.vocabBank.unshift({word, def, source, date:Date.now()});
+      });
+      state.vocabBank=state.vocabBank.slice(0,200);
+      save();
+    }catch(e){}
+  },
 
   renderQuestion(){
     const s=this.session;
