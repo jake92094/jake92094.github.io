@@ -323,11 +323,11 @@ label.tiny{display:block;margin:10px 0 0}
       </label>
       <div class="grid2">
         <button type="button" onclick="document.getElementById('scanCam').click()">📷 Scan Next Page</button>
-        <button type="button" onclick="document.getElementById('scanGal').click()">🖼️ Existing Photo</button>
+        <button type="button" onclick="document.getElementById('scanGal').click()">🖼️ Existing Photos (one or a whole chapter)</button>
       </div>
       <button type="button" onclick="Scanner.openLiveCamera()">🎥 Batch Scan — camera stays open, snap page after page</button>
       <input id="scanCam" class="fileInput" type="file" accept="image/*" capture="environment" onchange="Scanner.camChange(event)">
-      <input id="scanGal" class="fileInput" type="file" accept="image/*" onchange="Scanner.galChange(event)">
+      <input id="scanGal" class="fileInput" type="file" accept="image/*" multiple onchange="Scanner.galChange(event)">
       <div style="height:8px;border-radius:999px;background:#0f172a;border:1px solid var(--border);overflow:hidden;margin:6px 0 4px"><div id="scanBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--primary),var(--green));transition:width .15s"></div></div>
       <p id="scanStatus" class="tiny">Choose a page photo to begin.</p>
     </div>
@@ -3016,11 +3016,20 @@ const Scanner={
     this.addFromFile(f);
   },
   galChange(ev){
-    const f=ev.target.files&&ev.target.files[0];
+    const files=Array.from(ev.target.files||[]);
     ev.target.value='';
-    if(!f){ this.setStatus('No photo was selected. Try again.'); return; }
-    this.setStatus('Got the photo. Starting scan...');
-    this.addFromFile(f);
+    if(!files.length){ this.setStatus('No photo was selected. Try again.'); return; }
+    // Whole-chapter import: select many photos at once and every one
+    // becomes a page, in the order the pictures were taken (Lens and
+    // camera apps save sequentially, so timestamp order = page order).
+    files.sort((a,b)=>(a.lastModified||0)-(b.lastModified||0));
+    (async()=>{
+      for(let i=0;i<files.length;i++){
+        this.setStatus(files.length>1?('Reading photo '+(i+1)+' of '+files.length+'...'):'Got the photo. Starting scan...');
+        await this.addFromFile(files[i]);
+      }
+      if(files.length>1) this.setStatus('All '+files.length+' photos read — check the pages below, then save the chapter.');
+    })();
   },
 
   saveActive(){
