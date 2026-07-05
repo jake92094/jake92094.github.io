@@ -232,7 +232,7 @@ label.tiny{display:block;margin:10px 0 0}
   <div class="panel">
     <textarea id="readText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Reader.loadActive('read')">Load Active Chapter</button>
-    <div id="pagePickerWrapRead" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Pages at a time: <select id="pageSpanRead" onchange="setPageSpan(this.value)" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">1 page</option><option value="2">2 pages</option><option value="3">3 pages</option></select></label>
+    <div id="pagePickerWrapRead" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Pages at a time: <select id="pageSpanRead" onchange="setPageSpan(this.value,'read')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">1 page</option><option value="2">2 pages</option><option value="3">3 pages</option></select></label>
       <label class="tiny">Or load just one page:</label>
       <select id="pagePickerRead" onchange="loadSpecificPage('read',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
@@ -263,7 +263,7 @@ label.tiny{display:block;margin:10px 0 0}
   <div class="panel">
     <textarea id="lawnText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Reader.loadActive('lawn')">Load Active Chapter</button>
-    <div id="pagePickerWrapLawn" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Pages at a time: <select id="pageSpanLawn" onchange="setPageSpan(this.value)" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">1 page</option><option value="2">2 pages</option><option value="3">3 pages</option></select></label>
+    <div id="pagePickerWrapLawn" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Pages at a time: <select id="pageSpanLawn" onchange="setPageSpan(this.value,'lawn')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">1 page</option><option value="2">2 pages</option><option value="3">3 pages</option></select></label>
       <label class="tiny">Or load just one page:</label>
       <select id="pagePickerLawn" onchange="loadSpecificPage('lawn',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
@@ -460,7 +460,7 @@ label.tiny{display:block;margin:10px 0 0}
   <div class="panel">
     <textarea id="rsvpText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Rsvp.loadActive()">Load Active Chapter</button>
-    <div id="pagePickerWrapRsvp" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Pages at a time: <select id="pageSpanRsvp" onchange="setPageSpan(this.value)" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">1 page</option><option value="2">2 pages</option><option value="3">3 pages</option></select></label>
+    <div id="pagePickerWrapRsvp" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Pages at a time: <select id="pageSpanRsvp" onchange="setPageSpan(this.value,'rsvp')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">1 page</option><option value="2">2 pages</option><option value="3">3 pages</option></select></label>
       <label class="tiny">Or load just one page:</label>
       <select id="pagePickerRsvp" onchange="loadSpecificPage('rsvp',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
@@ -1270,13 +1270,25 @@ function loadSpecificPage(mode, value){
   refreshActiveChapterBanner();
 }
 
-function setPageSpan(v){
+function setPageSpan(v, mode){
   state.pageSpan=Math.max(1,Math.min(3,parseInt(v,10)||1));
   save();
   ['read','lawn','rsvp'].forEach(m=>{
     const s=$(m==='read'?'pageSpanRead':m==='lawn'?'pageSpanLawn':'pageSpanRsvp');
     if(s) s.value=String(state.pageSpan);
   });
+  // Apply immediately: if a specific page is already picked in this
+  // mode, reload it right away with the new span -- otherwise the
+  // setting silently waited for the NEXT pick and looked broken.
+  if(mode){
+    const sel=$(mode==='lawn'?'pagePickerLawn':mode==='rsvp'?'pagePickerRsvp':'pagePickerRead');
+    if(sel&&sel.value&&sel.value!=='whole'){
+      loadSpecificPage(mode, sel.value);
+    }else{
+      const i=nextUnreadPageIndex();
+      if(i!==null){ loadSpecificPage(mode, String(i)); const s2=$(mode==='lawn'?'pagePickerLawn':mode==='rsvp'?'pagePickerRsvp':'pagePickerRead'); if(s2) s2.value=String(i); }
+    }
+  }
 }
 
 // The app knows which page comes next: first unread page after the one
@@ -3786,4 +3798,3 @@ if(state.justMigrated){
 </script>
 </body>
 </html>
-
