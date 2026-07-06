@@ -417,7 +417,7 @@ label.tiny{display:block;margin:10px 0 0}
       <button type="button" onclick="Scanner.openLiveCamera()">🎥 Batch Scan — camera stays open, snap page after page</button>
       <input id="scanCam" class="fileInput" type="file" accept="image/*" capture="environment" onchange="Scanner.camChange(event)">
       <input id="scanGal" class="fileInput" type="file" accept="image/*" multiple onchange="Scanner.galChange(event)">
-      <input id="scanFolder" class="fileInput" type="file" multiple onchange="Scanner.galChange(event)">
+      <input id="scanFolder" class="fileInput" type="file" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.gif,.bmp" multiple onchange="Scanner.galChange(event)">
       <div style="height:8px;border-radius:999px;background:#0f172a;border:1px solid var(--border);overflow:hidden;margin:6px 0 4px"><div id="scanBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--primary),var(--green));transition:width .15s"></div></div>
       <p id="scanStatus" class="tiny">Choose a page photo to begin.</p>
     </div>
@@ -3196,7 +3196,7 @@ const Scanner={
     let files=Array.from(ev.target.files||[]);
     ev.target.value='';
     // The Files picker can include non-images (PDFs, docs) -- keep only pictures.
-    files=files.filter(f=>!f.type||f.type.startsWith('image/'));
+    files=files.filter(f=>(f.type&&f.type.startsWith('image/'))||/\.(jpe?g|png|webp|heic|heif|gif|bmp)$/i.test(f.name||''));
     if(!files.length){ this.setStatus('No photos found in that selection. Pick image files.'); return; }
     // Whole-chapter import: select many photos at once and every one
     // becomes a page, in the order the pictures were taken (Lens and
