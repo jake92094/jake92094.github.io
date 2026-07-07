@@ -3015,10 +3015,24 @@ const Scanner={
   // 📝 Text-file chapters: a scanner's "export as text" file becomes
   // pages instantly -- no OCR at all, perfect quality by definition.
   // Multi-page files get auto-split; single blocks become one page.
+  splitEven(text,n){
+    const words=String(text).trim().split(/\s+/);
+    const per=Math.ceil(words.length/n);
+    const out=[];
+    for(let i=0;i<words.length;i+=per) out.push(words.slice(i,i+per).join(' '));
+    return out;
+  },
+
   async addFromTxt(file){
     const text=(await file.text()).trim();
     if(!text) throw new Error('Text file was empty');
-    const chunks=this.autoSplitPages(text)||[text];
+    let chunks=this.autoSplitPages(text)||[text];
+    // The guaranteed path: whatever the auto-split thinks, YOU know how
+    // many pages this really is. Confirm or override, and an even
+    // word-count split makes exactly that many pages. Cannot fail.
+    const ask=prompt('Auto-split found '+chunks.length+' page'+(chunks.length===1?'':'s')+'. How many pages should this be? (OK to accept, or type the real number)', String(chunks.length));
+    const n=parseInt(ask,10);
+    if(n&&n>0&&n!==chunks.length) chunks=this.splitEven(text,n);
     if(!this.pages.length) this.groupId='ch_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
     chunks.forEach(c=>{
       this.pages.push({text:this.finalizePageText(c), addedDate:Date.now()});
