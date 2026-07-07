@@ -1,41 +1,22 @@
 {
   "name": "Read Rise",
   "short_name": "ReadRise",
-  "description": "A reading trainer that helps you build speed, comprehension, and confidence. Scan real book pages with AI, take comprehension quizzes, build study guides and flashcards, and level up through 50 ranks as you read.",
+  "description": "A reading trainer that helps you build speed, comprehension, and confidence. Scan real book pages, take comprehension quizzes, build study guides and flashcards, and level up through 50 ranks as you read.",
   "display": "standalone",
   "background_color": "#050b14",
   "theme_color": "#38bdf8",
-  "start_url": "https://jake92094.github.io/Reading-training-4.8/",
-  "scope": "/Reading-training-4.8/",
+  "start_url": "/",
+  "scope": "/",
   "orientation": "portrait",
   "lang": "en",
-  "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512-maskable.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
   "share_target": {
-    "action": "/Reading-training-4.8/",
+    "action": "/",
     "method": "GET",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  }
+    "params": { "title": "title", "text": "text", "url": "url" }
+  },
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
 }
