@@ -3110,8 +3110,18 @@ const Scanner={
   autoSplitPages(text){
     const t=String(text||'').replace(/\r/g,'');
     if(t.length<600) return null;
-    // Marker split: lines that are just a page number / "Page N"
-    const markerRe=/\n\s*(?:[-—_=*]{0,4}\s*)?(?:page\s+)?\d{1,4}(?:\s*[-—_=*]{0,4})?\s*\n/gi;
+    // Form-feed split FIRST: scanner text exports mark page breaks with
+    // an invisible control character (\f). It's the most reliable
+    // separator when present -- exactly one per page boundary.
+    if(t.indexOf('\f')!==-1){
+      const byFF=t.split(/\f+/).map(s=>s.trim()).filter(s=>s.length>50);
+      if(byFF.length>=2) return byFF;
+    }
+    // Divider lines: a row of dashes/equals/asterisks alone on a line
+    const byRule=t.split(/\n\s*[-—_=*]{3,}\s*\n/).map(s=>s.trim()).filter(s=>s.length>150);
+    if(byRule.length>=2) return byRule;
+    // Marker split: lines that are just "Page N", "Page 3 of 17", or a bare number
+    const markerRe=/\n\s*(?:[-—_=*]{0,4}\s*)?(?:page\s+)?\d{1,4}(?:\s*(?:of|\/)\s*\d{1,4})?(?:\s*[-—_=*]{0,4})?\s*\n/gi;
     const byMarker=t.split(markerRe).map(s=>s.trim()).filter(s=>s.length>200);
     if(byMarker.length>=2) return byMarker;
     // Blank-line split: two-or-more newlines between substantial runs
