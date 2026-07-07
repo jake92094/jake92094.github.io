@@ -338,6 +338,7 @@ label.tiny{display:block;margin:10px 0 0}
       <button type="button" onclick="Reader.guidedStep(-1)">← Previous Line</button>
       <button type="button" onclick="Reader.guidedStep(1)">Next Line →</button>
     </div>
+    <button id="ttsBtn" class="hidden" onclick="Reader.toggleSpeak()">🔊 Read Aloud</button>
     <button id="pauseReadBtn" class="hidden" onclick="Reader.pause('read')">Pause</button>
     <button id="finishReadBtn" class="danger hidden" onclick="Reader.finish('read')">Finished Reading / Take Quiz</button>
   </div>
@@ -820,18 +821,24 @@ const AI={
   },
 
   async generateQuiz(text){
+    // Question count scales with how much was read: ~1 page gets 4
+    // questions, 2 pages get 6, 3 pages get 8 -- so multi-page sessions
+    // are tested properly instead of skimmed.
+    const words=String(text).trim().split(/\s+/).length;
+    const n=words<450?4:(words<900?6:8);
     const prompt='You are a reading comprehension quiz writer. Read the passage '
-      +'below and write exactly 4 multiple-choice questions that test real '
-      +'understanding of it (main idea, a supporting detail, a takeaway, and '
-      +'one vocabulary-in-context question). Each question needs exactly 4 '
-      +'options, only one correct. Respond with ONLY a JSON array, no other '
+      +'below and write exactly '+n+' multiple-choice questions that test real '
+      +'understanding of it: one main-idea question, '+(n-3)+' supporting-detail '
+      +'questions drawn from DIFFERENT parts of the passage (beginning, middle, '
+      +'and end), one takeaway question, and one vocabulary-in-context question. '
+      +'Each question needs exactly 4 options, only one correct. Respond with ONLY a JSON array, no other '
       +'text, in this exact shape: '
       +'[{"q":"question text","options":["a","b","c","d"],"a":0,"cat":"mainIdea","explain":"why this is correct"}] '
       +'where "a" is the index (0-3) of the correct option, and "cat" is one of: '
       +'mainIdea, support, takeaway, keyword. On the keyword question ONLY, also '
       +'include "term":"the vocabulary word itself" and make its correct option a '
-      +'clear definition of that word.\n\nPassage:\n'+text.slice(0,6000);
-    const raw=await this.ask(prompt,1200);
+      +'clear definition of that word.\n\nPassage:\n'+text.slice(0, n>4?9500:6000);
+    const raw=await this.ask(prompt, 600+n*220);
     const qs=this.extractJson(raw);
     if(!Array.isArray(qs)||!qs.length) throw new Error('Bad quiz shape');
     return qs;
@@ -1345,12 +1352,20 @@ function loadSpecificPage(mode, value){
   // read when the session completes.
   const span=Math.max(1,parseInt(state.pageSpan||1,10));
   const all=(state.library||[]).filter(x=>x.groupId===gid&&x.type==='scanned chapter'&&typeof x.pageIndex==='number');
+  if(!gid||!all.length){ alert('No scanned chapter is active — open Library and Load a chapter first, or scan one.'); return; }
+  let startIdx=pageIndex;
+  if(!all.some(x=>x.pageIndex===startIdx)){
+    // Requested page missing (renumbered/deleted) -- snap to the nearest
+    // existing page instead of failing.
+    const sorted=all.map(x=>x.pageIndex).sort((a,b)=>Math.abs(a-startIdx)-Math.abs(b-startIdx));
+    startIdx=sorted[0];
+  }
   const picked=[];
   for(let i=0;i<span;i++){
-    const e=all.find(x=>x.pageIndex===pageIndex+i);
+    const e=all.find(x=>x.pageIndex===startIdx+i);
     if(e) picked.push(e);
   }
-  if(!picked.length){ alert('Could not find that page.'); return; }
+  if(!picked.length){ alert('Could not find that page in this chapter.'); return; }
   if(mode==='rsvp') Rsvp.stop(); else Reader.stop(mode);
   const combined=picked.map(e=>e.text).join('\n\n');
   const ta=$(mode==='lawn'?'lawnText':mode==='rsvp'?'rsvpText':'readText');
@@ -1413,6 +1428,17 @@ function handleSharedText(){
       setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'center'}),300);
     }
   }catch(e){}
+}
+
+// "What page am I on?" -- badge text for the reading views.
+function pageBadgeText(){
+  const ch=state.activeChapter;
+  if(!ch||!ch.groupId) return '';
+  const prog=state.chapterProgress&&state.chapterProgress[ch.groupId];
+  const total=prog&&prog.pageCount?(' of '+prog.pageCount):'';
+  if(ch.pageSpan&&ch.pageSpan.length>1) return '📖 Pages '+(ch.pageSpan[0]+1)+'–'+(ch.pageSpan[ch.pageSpan.length-1]+1)+total;
+  if(typeof ch.pageIndex==='number') return '📖 Page '+(ch.pageIndex+1)+total;
+  return '';
 }
 
 function setPageSpan(v, mode){
@@ -1695,19 +1721,42 @@ function checkAchievementUnlocks(){
     if(a.check()&&!state.achievementDates[a.id]){
       state.achievementDates[a.id]=Date.now();
       changed=true;
-      if(!isFirstRun) newlyUnlocked.push(a);
+      if(!isFirstRun){
+        newlyUnlocked.push(a);
+        // Bigger challenge, bigger reward: every unlock pays XP scaled
+        // to how hard the achievement is to earn.
+        const xp=ACH_XP[a.id]||100;
+        state.xp=Math.max(0,state.xp+xp);
+        state.level=calcLevel(state.xp);
+        state.logs=state.logs||[];
+        state.logs.unshift({act:a.icon+' '+a.name+' unlocked', delta:xp, date:Date.now(), level:state.level});
+        state.logs=state.logs.slice(0,30);
+      }
     }
   });
   if(changed) save();
   newlyUnlocked.forEach((a,i)=>setTimeout(()=>showAchievementToast(a), i*3800));
 }
 
+// XP paid per achievement -- roughly proportional to the grind behind it.
+const ACH_XP={
+  firstScan:50, chapterBuilder:75, libraryBuilder:150, archivist:300,
+  pageFinisher:100, dedicated:200, bookworm:400, centurion:800,
+  firstBook:300, trilogy:700,
+  quizPass:75, perfectScore:200,
+  speedStarter:150, speedReader:400, lightningReader:800,
+  threeDayStreak:100, weekStreak:250, monthStreak:1000,
+  wordsTenK:200, wordsFiftyK:600,
+  levelTen:250, levelTwentyFive:600, haloGeneral:1500,
+  guideBuilder:150
+};
+
 function showAchievementToast(a){
   const toast=document.createElement('div');
   toast.className='achieveToast';
   toast.innerHTML='<div style="font-size:32px">'+a.icon+'</div>'
     +'<div><div style="font-size:10px;letter-spacing:1.5px;opacity:.75">ACHIEVEMENT UNLOCKED</div>'
-    +'<div style="font-size:16px">'+a.name+'</div></div>';
+    +'<div style="font-size:16px">'+a.name+' <span style="opacity:.8">+'+(ACH_XP[a.id]||100)+' XP</span></div></div>';
   document.body.appendChild(toast);
   setTimeout(()=>{
     toast.classList.add('out');
@@ -2377,8 +2426,15 @@ const Quiz={
         +coachNotes.map(n=>'<p class="tiny" style="margin:6px 0">'+n+'</p>').join('')
       +'</div>'
       +'<button class="green" id="qzRetry">Retry This Quiz</button>'
-      +(nextUnreadPageIndex()!==null?'<button class="green" onclick="continueNextPage()">▶ Next Page: '+(nextUnreadPageIndex()+1)+' →</button>':'')
+      +(passed&&nextUnreadPageIndex()!==null?'<button class="green" onclick="continueNextPage()">▶ Next page is loaded — Continue Reading</button>':'')
       +'<button onclick="home()">Back to Hub</button>';
+    // Auto-advance: the moment a Reading Test is passed, the next unread
+    // page(s) silently load into the reader and become the Active
+    // Chapter -- one tap on Continue (or Start) and you're reading on.
+    if(passed){
+      const ni=nextUnreadPageIndex();
+      if(ni!==null){ try{ loadSpecificPage('read', String(ni)); }catch(e){} }
+    }
     container.querySelector('#qzRetry').onclick=()=>Quiz.render(container,text,wpm,mode);
     this.aiCoachNotes(container, recordedWpm, acc, mode);
   },
@@ -2471,6 +2527,7 @@ const Reader={
     $(mode==='lawn'?'finishLawnBtn':'finishReadBtn').classList.remove('hidden');
     $(mode==='lawn'?'pauseLawnBtn':'pauseReadBtn').classList.remove('hidden');
     $(mode==='lawn'?'pauseLawnBtn':'pauseReadBtn').textContent='Pause';
+    if(mode==='read'&&window.speechSynthesis) $('ttsBtn').classList.remove('hidden');
     $(mode==='lawn'?'lawnTimer':'readTimer').classList.remove('hidden');
     $(mode==='lawn'?'lawnWpmLive':'readWpmLive').classList.remove('hidden');
     $(mode==='lawn'?'quizLawn':'quizRead').classList.add('hidden');
@@ -2490,6 +2547,34 @@ const Reader={
     console.error('Reader.start failed:',e);
     alert('Something broke starting this reader: '+(e&&e.message?e.message:e)+'. Please screenshot this exact message.');
    }
+  },
+
+  // 🔊 Read-aloud: the phone's built-in voice reads the passage while
+  // you follow along -- hearing-while-seeing is one of the most proven
+  // supports for readers who struggle. Free, offline, no AI.
+  carryToRead(){
+    const s=this.sessions.lawn;
+    if(s&&s.text&&$('readText')) $('readText').value=s.text;
+    openView('read');
+  },
+
+  speaking:false,
+  toggleSpeak(){
+    if(!window.speechSynthesis) return;
+    if(this.speaking){
+      speechSynthesis.cancel();
+      this.speaking=false;
+      $('ttsBtn').textContent='🔊 Read Aloud';
+      return;
+    }
+    const s=this.sessions.read;
+    if(!s||!s.text) return;
+    const u=new SpeechSynthesisUtterance(s.text);
+    u.rate=1.0;
+    u.onend=()=>{ this.speaking=false; const b=$('ttsBtn'); if(b) b.textContent='🔊 Read Aloud'; };
+    this.speaking=true;
+    $('ttsBtn').textContent='⏹ Stop Reading Aloud';
+    speechSynthesis.speak(u);
   },
 
   pause(mode){
@@ -2531,10 +2616,12 @@ const Reader={
   renderRead(s){
     const box=$('reading');
     box.classList.remove('hidden');
+    const badge=pageBadgeText();
     const guided=$('guidedModeToggle')&&$('guidedModeToggle').checked;
     if(!guided){
       $('guidedNav').classList.add('hidden');
       box.textContent=normalize(s.text);
+      if(badge){ const b=document.createElement('div'); b.className='tiny'; b.style.cssText='text-align:center;color:var(--primary);margin-bottom:8px'; b.textContent=badge; box.prepend(b); }
       return;
     }
     if(!s.guidedLines){
@@ -2588,7 +2675,8 @@ const Reader={
     // needs to sit over the text being read. The current line is
     // highlighted, everything else dims, and the box keeps the active
     // line centered on its own.
-    box.innerHTML='<p class="tiny" style="text-align:center;color:var(--primary);margin:0 0 8px">👆 Tap anywhere on the text to move to the next line</p>'
+    const badge=pageBadgeText();
+    box.innerHTML='<p class="tiny" style="text-align:center;color:var(--primary);margin:0 0 8px">'+(badge?badge+' • ':'')+'👆 Tap anywhere to move to the next line</p>'
       +s.chunks.map((c,i)=>
         '<div class="lmwLine" style="text-align:'+dir(i)+';'
           +(i===s.lawnIdx
@@ -2625,6 +2713,8 @@ const Reader={
     }
     clearInterval(s.tick);
     clearTimeout(s.auto);
+    if(window.speechSynthesis&&this.speaking){ speechSynthesis.cancel(); this.speaking=false; }
+    const b=$('ttsBtn'); if(b){ b.classList.add('hidden'); b.textContent='🔊 Read Aloud'; }
     const wpm=Math.max(1,Math.round(s.total/(sec/60)));
     $(mode==='lawn'?'finishLawnBtn':'finishReadBtn').classList.add('hidden');
     $(mode==='lawn'?'pauseLawnBtn':'pauseReadBtn').classList.add('hidden');
@@ -2645,7 +2735,7 @@ const Reader={
           +'<div class="stat" style="margin:0"><small>DRILL PACE</small><b>'+wpm+' WPM</b></div>'
           +'<div class="stat" style="margin:0"><small>WORDS</small><b>'+s.total+'</b></div>'
         +'</div><p class="tiny" style="margin-top:10px">Drills train your eyes — they don\'t record speed or give XP. The Reading Test at the end is where it counts: quiz, XP, records, and mastery stars all live there.</p></div>'
-        +'<button class="green" onclick="openView(\'read\')">Take the Reading Test →</button>'
+        +'<button class="green" onclick="Reader.carryToRead()">Take the Reading Test (same pages loaded) →</button>'
         +'<button onclick="home()">Back to Hub</button>';
       return;
     }
@@ -3614,6 +3704,14 @@ const Rsvp={
     $('rsvpText').value=state.activeChapter.text;
   },
 
+  // Hand the exact same passage to the next rung of the ladder, so no
+  // re-picking (and no "can't load") between drills.
+  carryToLawn(){
+    const t=this.words.join(' ');
+    if($('lawnText')) $('lawnText').value=t;
+    openView('lawn');
+  },
+
   tick(){
     if(this.paused) return;
     if(this.idx>=this.words.length){
@@ -3632,7 +3730,7 @@ const Rsvp={
           +'<div class="stat" style="margin:0"><small>DRILL PACE</small><b>'+this.speed+' WPM</b></div>'
           +'<div class="stat" style="margin:0"><small>WORDS</small><b>'+this.words.length+'</b></div>'
         +'</div><p class="tiny" style="margin-top:10px">Drills train your eyes — they don\'t record speed or give XP. The Reading Test is where it counts: quiz, XP, records, and mastery stars.</p></div>'
-        +'<button class="green" onclick="openView(\'lawn\')">Next Drill: Lawnmower →</button>'
+        +'<button class="green" onclick="Rsvp.carryToLawn()">Next Drill: Lawnmower (same pages loaded) →</button>'
         +'<button onclick="home()">Back to Hub</button>';
       return;
     }
