@@ -2932,7 +2932,24 @@ const Scanner={
     return lines.join('\n').trim();
   },
 
+  // Free OCR confusion fixer: the offline engine constantly mistakes
+  // capital-I for lowercase-l (near-identical glyphs). These are the
+  // safe, unambiguous swaps -- standalone words and contractions where
+  // only "I" makes sense in English.
+  fixOcrConfusions(t){
+    return String(t||'')
+      .replace(/\bl\b/g,'I')
+      .replace(/\bl'(m|ve|ll|d)\b/gi,"I'$1")
+      .replace(/\b1'(m|ve|ll|d)\b/gi,"I'$1")
+      .replace(/\blt\b/g,'It')
+      .replace(/\bln\b/g,'In')
+      .replace(/\blf\b/g,'If')
+      .replace(/\bls\b/g,'Is')
+      .replace(/\blts\b/g,'Its');
+  },
+
   finalizePageText(raw){
+    raw=this.fixOcrConfusions(raw);
     let text=this.cleanOcr(raw||'');
     this.autoFillMeta(text);
     text=stripHeadingNoise(text);
@@ -2993,6 +3010,24 @@ const Scanner={
       document.head.appendChild(s);
     });
     window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  },
+
+  // 📝 Text-file chapters: a scanner's "export as text" file becomes
+  // pages instantly -- no OCR at all, perfect quality by definition.
+  // Multi-page files get auto-split; single blocks become one page.
+  async addFromTxt(file){
+    const text=(await file.text()).trim();
+    if(!text) throw new Error('Text file was empty');
+    const chunks=this.autoSplitPages(text)||[text];
+    if(!this.pages.length) this.groupId='ch_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    chunks.forEach(c=>{
+      this.pages.push({text:this.finalizePageText(c), addedDate:Date.now()});
+      state.totalPagesAdded=(state.totalPagesAdded||0)+1;
+    });
+    save();
+    this.renderPages();
+    this.renderBookPicker();
+    this.setStatus('📝 Text file added as '+chunks.length+' page'+(chunks.length===1?'':'s')+' — perfect quality, no scanning needed.');
   },
 
   async addFromPdf(file){
@@ -3230,10 +3265,11 @@ const Scanner={
     // Accept pictures AND PDFs (a scanned chapter often arrives as one PDF).
     const isImg=f=>(f.type&&f.type.startsWith('image/'))||/\.(jpe?g|png|webp|heic|heif|gif|bmp)$/i.test(f.name||'');
     const isPdf=f=>(f.type==='application/pdf')||/\.pdf$/i.test(f.name||'');
-    const rejected=files.filter(f=>!isImg(f)&&!isPdf(f));
-    files=files.filter(f=>isImg(f)||isPdf(f));
+    const isTxt=f=>(f.type==='text/plain')||/\.txt$/i.test(f.name||'');
+    const rejected=files.filter(f=>!isImg(f)&&!isPdf(f)&&!isTxt(f));
+    files=files.filter(f=>isImg(f)||isPdf(f)||isTxt(f));
     if(!files.length){
-      this.setStatus('Those files aren\'t images or PDFs: '+rejected.slice(0,3).map(f=>f.name||'unnamed').join(', ')+(rejected.length>3?'…':''));
+      this.setStatus('Those files aren\'t images, PDFs, or text files: '+rejected.slice(0,3).map(f=>f.name||'unnamed').join(', ')+(rejected.length>3?'…':''));
       return;
     }
     // Whole-chapter import: select many photos at once and every one
@@ -3256,6 +3292,8 @@ const Scanner={
         try{
           if((files[i].type==='application/pdf')||/\.pdf$/i.test(files[i].name||'')){
             await this.addFromPdf(files[i]);
+          }else if((files[i].type==='text/plain')||/\.txt$/i.test(files[i].name||'')){
+            await this.addFromTxt(files[i]);
           }else{
             await this.addFromFile(files[i]);
           }
