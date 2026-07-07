@@ -3893,6 +3893,28 @@ const Flash={
     return this.filterStruggling ? all.filter(c=>c.status==='learning') : all;
   },
 
+  // ▶ One tap from the shelf straight into reading: make this book
+  // active, load its first unread page, open the Reading Test.
+  continueBook(gid){
+    this.loadGroup(gid);
+    setTimeout(()=>{
+      const i=nextUnreadPageIndex();
+      if(i!==null){ loadSpecificPage('read', String(i)); openView('read'); }
+      else openView('read');
+    },50);
+  },
+
+  // 🔄 Read Again: clears this book's read-progress so the journey
+  // starts fresh from page 1. Mastery stars are earned forever and
+  // deliberately survive a re-read.
+  rereadBook(gid){
+    if(!confirm('Read this book again from page 1? Progress resets to zero — your ⭐ mastery stars are kept.')) return;
+    const prog=state.chapterProgress&&state.chapterProgress[gid];
+    if(prog){ prog.readPages=[]; prog.events=prog.events||[]; prog.events.push({type:'reread',date:Date.now()}); }
+    save();
+    this.continueBook(gid);
+  },
+
   render(){
     const cards=this.deck();
     const box=$('flashBox');
@@ -4055,20 +4077,33 @@ const Library={
       }
       shown++;
 
+      const isDone=pageCount>0&&readCount>=pageCount;
+      // "You're on page N": the first unread page of THIS book
+      let onPage=null;
+      if(prog&&pageCount&&!isDone){
+        const readSet=new Set(prog.readPages);
+        for(let i=0;i<pageCount;i++){ if(!readSet.has(i)){ onPage=i+1; break; } }
+      }
       html+='<div class="bookRow'+(isActiveGroup?' active':'')+'">'
-        +'<div class="bookSpine" style="background:'+this.spineColorFor(cleanTitle)+'">'+esc(this.initialsFor(cleanTitle))+'</div>'
+        +'<div class="bookSpine" style="background:'+this.spineColorFor(cleanTitle)+';position:relative">'+esc(this.initialsFor(cleanTitle))
+          +(isDone?'<span style="position:absolute;top:-7px;right:-7px;background:var(--green);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.4)">✅</span>':'')
+        +'</div>'
         +'<div class="bookBody">'
         +(isActiveGroup?'<p class="tiny" style="color:var(--green);font-weight:900;margin:0 0 4px">● CURRENTLY ACTIVE</p>':'')
-        +'<h3 style="margin:0 0 2px">'+esc(cleanTitle)+'</h3>'
+        +'<h3 style="margin:0 0 2px">'+esc(cleanTitle)+(isDone?' <span style="color:var(--green);font-size:14px">✅ READ</span>':'')+'</h3>'
+        +(onPage?'<p class="tiny" style="color:var(--gold);font-weight:800;margin:0 0 4px">📍 You\'re on page '+onPage+' of '+pageCount+'</p>':'')
         +(author?'<p class="tiny" style="color:var(--muted);margin:0 0 4px">by '+esc(author)+'</p>':'')
         +(chapters.length?'<p class="tiny" style="color:var(--primary);margin:0 0 4px">'+esc(chapters.join(', '))+'</p>':'')
         +(pageCount?'<div style="height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin:6px 0"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,var(--primary),var(--green))"></div></div>':'')
         +(progress?'<p class="tiny" style="color:var(--gold);margin:0 0 4px">'+esc(progress)+'</p>':'')
         +'<p class="tiny" style="margin:0 0 8px">'+groupItems.length+' item'+(groupItems.length===1?'':'s')+(guideCount?' • '+guideCount+' Study Guide'+(guideCount===1?'':'s'):'')+' • '+new Date(primary.date).toLocaleDateString()+'</p>'
         +'<div class="grid2">'
+          +(onPage?'<button class="green" onclick="Library.continueBook(\''+gid+'\')">▶ Continue — p. '+onPage+'</button>'
+            :(isDone?'<button class="green" onclick="Library.rereadBook(\''+gid+'\')">🔄 Read Again</button>'
+              :(isActiveGroup?'<button disabled style="opacity:.5">Already Active</button>':'<button class="green" onclick="Library.loadGroup(\''+gid+'\')">Load As Active</button>')))
           +'<button onclick="Library.toggleGroup(\''+gid+'\')">View Pages</button>'
-          +(isActiveGroup?'<button disabled style="opacity:.5">Already Active</button>':'<button class="green" onclick="Library.loadGroup(\''+gid+'\')">Load As Active</button>')
         +'</div>'
+        +((onPage&&!isActiveGroup)||(isDone&&!isActiveGroup)?'<div style="margin-top:8px"><button onclick="Library.loadGroup(\''+gid+'\')" style="margin:0">Load As Active</button></div>':'')
         +'<div class="grid2" style="margin-top:8px">'
           +'<button onclick="Library.toggleEdit(\''+gid+'\')">✏️ Edit Info</button>'
           +((state.chapterProgress&&state.chapterProgress[gid]&&state.chapterProgress[gid].readPages.length>0)
