@@ -2980,6 +2980,38 @@ const Scanner={
     this.renderBookPicker();
   },
 
+  // 📄 PDF chapters: a multi-page PDF becomes pages automatically. The
+  // pdf.js library loads on demand (only the first time a PDF is used),
+  // renders each page at readable resolution, and every rendered page
+  // rides the exact same pipeline as a photographed one.
+  async ensurePdfJs(){
+    if(window.pdfjsLib) return;
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload=res; s.onerror=()=>rej(new Error('Could not load the PDF reader (offline?)'));
+      document.head.appendChild(s);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  },
+
+  async addFromPdf(file){
+    await this.ensurePdfJs();
+    const data=await file.arrayBuffer();
+    const pdf=await window.pdfjsLib.getDocument({data}).promise;
+    for(let p=1;p<=pdf.numPages;p++){
+      this.setStatus('📄 PDF: reading page '+p+' of '+pdf.numPages+'...');
+      const page=await pdf.getPage(p);
+      const viewport=page.getViewport({scale:2});
+      const c=document.createElement('canvas');
+      c.width=viewport.width; c.height=viewport.height;
+      await page.render({canvasContext:c.getContext('2d'), viewport}).promise;
+      const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));
+      await this.addFromFile(blob);
+    }
+    this.setStatus('📄 PDF done — '+pdf.numPages+' pages added. Check them below, then save the chapter.');
+  },
+
   fileToCanvas(file,maxW){
     return new Promise((resolve,reject)=>{
       const img=new Image();
@@ -3195,9 +3227,15 @@ const Scanner={
   galChange(ev){
     let files=Array.from(ev.target.files||[]);
     ev.target.value='';
-    // The Files picker can include non-images (PDFs, docs) -- keep only pictures.
-    files=files.filter(f=>(f.type&&f.type.startsWith('image/'))||/\.(jpe?g|png|webp|heic|heif|gif|bmp)$/i.test(f.name||''));
-    if(!files.length){ this.setStatus('No photos found in that selection. Pick image files.'); return; }
+    // Accept pictures AND PDFs (a scanned chapter often arrives as one PDF).
+    const isImg=f=>(f.type&&f.type.startsWith('image/'))||/\.(jpe?g|png|webp|heic|heif|gif|bmp)$/i.test(f.name||'');
+    const isPdf=f=>(f.type==='application/pdf')||/\.pdf$/i.test(f.name||'');
+    const rejected=files.filter(f=>!isImg(f)&&!isPdf(f));
+    files=files.filter(f=>isImg(f)||isPdf(f));
+    if(!files.length){
+      this.setStatus('Those files aren\'t images or PDFs: '+rejected.slice(0,3).map(f=>f.name||'unnamed').join(', ')+(rejected.length>3?'…':''));
+      return;
+    }
     // Whole-chapter import: select many photos at once and every one
     // becomes a page, in the order the pictures were taken (Lens and
     // camera apps save sequentially, so timestamp order = page order).
@@ -3213,10 +3251,16 @@ const Scanner={
       let failed=0;
       for(let i=0;i<files.length;i++){
         this.setStatus(files.length>1?('Reading photo '+(i+1)+' of '+files.length+'...'):'Got the photo. Starting scan...');
-        // One corrupt/huge photo must never kill the rest of the batch --
+        // One corrupt/huge file must never kill the rest of the batch --
         // catch per-file, keep going, report the casualties at the end.
-        try{ await this.addFromFile(files[i]); }
-        catch(e){ failed++; console.warn('Photo '+(i+1)+' failed:',e); this.busy=false; }
+        try{
+          if((files[i].type==='application/pdf')||/\.pdf$/i.test(files[i].name||'')){
+            await this.addFromPdf(files[i]);
+          }else{
+            await this.addFromFile(files[i]);
+          }
+        }
+        catch(e){ failed++; console.warn('File '+(i+1)+' failed:',e); this.busy=false; }
       }
       if(files.length>1) this.setStatus(
         failed?((files.length-failed)+' of '+files.length+' photos read — '+failed+' failed (blurry/too large?). Re-add just those with Existing Photos.')
