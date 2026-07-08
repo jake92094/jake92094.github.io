@@ -309,8 +309,8 @@ label.tiny{display:block;margin:10px 0 0}
   <div class="panel">
     <textarea id="readText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Reader.loadActive('read')">Load Active Chapter</button>
-    <div id="pagePickerWrapRead" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Pages at a time: <select id="pageSpanRead" onchange="setPageSpan(this.value,'read')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">1 page</option><option value="2">2 pages</option><option value="3">3 pages</option></select></label>
-      <label class="tiny">Or load just one page:</label>
+    <div id="pagePickerWrapRead" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanRead" onchange="setPageSpan(this.value,'read')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
+      <label class="tiny">Jump to a starting page:</label>
       <select id="pagePickerRead" onchange="loadSpecificPage('read',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
     <label class="tiny" style="display:flex;align-items:center;gap:8px;margin-top:8px">
@@ -341,8 +341,8 @@ label.tiny{display:block;margin:10px 0 0}
   <div class="panel">
     <textarea id="lawnText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Reader.loadActive('lawn')">Load Active Chapter</button>
-    <div id="pagePickerWrapLawn" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Pages at a time: <select id="pageSpanLawn" onchange="setPageSpan(this.value,'lawn')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">1 page</option><option value="2">2 pages</option><option value="3">3 pages</option></select></label>
-      <label class="tiny">Or load just one page:</label>
+    <div id="pagePickerWrapLawn" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanLawn" onchange="setPageSpan(this.value,'lawn')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
+      <label class="tiny">Jump to a starting page:</label>
       <select id="pagePickerLawn" onchange="loadSpecificPage('lawn',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
     <label class="tiny">Words per chunk: <b id="lawnSizeLabel">7</b></label>
@@ -542,8 +542,8 @@ label.tiny{display:block;margin:10px 0 0}
   <div class="panel">
     <textarea id="rsvpText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Rsvp.loadActive()">Load Active Chapter</button>
-    <div id="pagePickerWrapRsvp" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Pages at a time: <select id="pageSpanRsvp" onchange="setPageSpan(this.value,'rsvp')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">1 page</option><option value="2">2 pages</option><option value="3">3 pages</option></select></label>
-      <label class="tiny">Or load just one page:</label>
+    <div id="pagePickerWrapRsvp" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanRsvp" onchange="setPageSpan(this.value,'rsvp')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
+      <label class="tiny">Jump to a starting page:</label>
       <select id="pagePickerRsvp" onchange="loadSpecificPage('rsvp',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
     <label class="tiny">Speed: <b id="rsvpSpeedLabel">300</b> WPM</label>
@@ -1215,7 +1215,9 @@ function markChapterProgress(){
     prog.readPages=Array.from({length:prog.pageCount},(_,i)=>i);
     if(newlyRead.length) prog.events.push({type:'whole',pageCount:newlyRead.length,date:Date.now()});
   }
-  save();
+  const next=nextUnreadPageIndex();
+  if(next!==null) saveAutoBookmark(ch.groupId,next);
+  else save();
   checkChapterComplete(ch.groupId);
 }
 
@@ -1251,8 +1253,8 @@ function chapterProgressText(groupId){
   const done=prog.readPages.length, total=prog.pageCount;
   const mastered=Array.from({length:total},(_,i)=>i).filter(i=>pageIsMastered(prog,i)).length;
   const starNote=mastered?' • '+mastered+' mastered ⭐':'';
-  if(done>=total) return 'All '+total+' pages read — chapter complete! ✅'+starNote;
-  return done+' of '+total+' pages read — '+(total-done)+' more to finish this chapter.'+starNote;
+  if(done>=total) return 'All '+total+' pages quiz-passed — chapter complete! ✅'+starNote;
+  return done+' of '+total+' pages quiz-passed — '+(total-done)+' locked until you pass each quiz.'+starNote;
 }
 
 function checkChapterComplete(groupId){
@@ -1324,8 +1326,9 @@ function renderPagePicker(mode){
   const prog=state.chapterProgress&&state.chapterProgress[gid];
   sel.innerHTML='<option value="whole">Whole Chapter</option>'
     +pages.map(p=>{
-      const mark=pageIsMastered(prog,p.pageIndex)?' ⭐':(prog&&prog.readPages.includes(p.pageIndex)?' ✓':'');
-      return '<option value="'+p.pageIndex+'">Page '+(p.pageIndex+1)+mark+'</option>';
+      const locked=mode==='read' && prog && !pageBatchIsUnlocked(gid,p.pageIndex);
+      const mark=locked?' 🔒':(pageIsMastered(prog,p.pageIndex)?' ⭐':(prog&&prog.readPages.includes(p.pageIndex)?' ✓':''));
+      return '<option value="'+p.pageIndex+'"'+(locked?' disabled':'')+'>Page '+(p.pageIndex+1)+mark+'</option>';
     }).join('');
 }
 
@@ -1335,7 +1338,7 @@ function saveAutoBookmark(gid,pageIndex){
   state.bookmarks=state.bookmarks||{};
   state.bookmarks[gid]={pageIndex:parseInt(pageIndex,10),date:Date.now()};
   save();
-  const msg='🔖 Checkpoint saved — Page '+(parseInt(pageIndex,10)+1);
+  const msg='🔖 Loaded checkpoint — Page '+(parseInt(pageIndex,10)+1);
   const el=$('activeChapterBanner');
   if(el){
     const old=$('checkpointSavedLine');
@@ -1371,6 +1374,11 @@ function loadSpecificPage(mode, value){
     const sorted=all.map(x=>x.pageIndex).sort((a,b)=>Math.abs(a-startIdx)-Math.abs(b-startIdx));
     startIdx=sorted[0];
   }
+  if(mode==='read' && !pageBatchIsUnlocked(gid,startIdx)){
+    const firstLocked=firstLockedPageIndex(gid);
+    alert('🔒 That page is locked. Finish the quiz for Page '+(firstLocked+1)+' first, then the next pages will unlock.');
+    startIdx=firstLocked;
+  }
   const picked=[];
   for(let i=0;i<span;i++){
     const e=all.find(x=>x.pageIndex===startIdx+i);
@@ -1389,6 +1397,8 @@ function loadSpecificPage(mode, value){
   // never counted toward progress or mastery.
   state.activeChapter={title:first.title, author:first.author||'', chapter:first.chapter||'', pages:label, text:combined, groupId:gid, pageIndex:idxs[0], pageSpan:idxs, date:Date.now()};
   saveAutoBookmark(gid, idxs[0]);
+  const sel=$(mode==='lawn'?'pagePickerLawn':mode==='rsvp'?'pagePickerRsvp':'pagePickerRead');
+  if(sel) sel.value=String(idxs[0]);
   refreshActiveChapterBanner();
 }
 
@@ -1453,7 +1463,7 @@ function pageBadgeText(){
 }
 
 function setPageSpan(v, mode){
-  state.pageSpan=Math.max(1,Math.min(3,parseInt(v,10)||1));
+  state.pageSpan=Math.max(1,Math.min(5,parseInt(v,10)||1));
   save();
   ['read','lawn','rsvp'].forEach(m=>{
     const s=$(m==='read'?'pageSpanRead':m==='lawn'?'pageSpanLawn':'pageSpanRsvp');
@@ -1481,10 +1491,28 @@ function nextUnreadPageIndex(){
   const prog=gid&&state.chapterProgress&&state.chapterProgress[gid];
   if(!prog||!prog.pageCount) return null;
   const read=new Set(prog.readPages);
-  const start=(typeof ch.pageIndex==='number')?ch.pageIndex+1:0;
+  const currentEnd=(ch.pageSpan&&ch.pageSpan.length)?Math.max(...ch.pageSpan):ch.pageIndex;
+  const start=(typeof currentEnd==='number')?currentEnd+1:0;
   for(let i=start;i<prog.pageCount;i++) if(!read.has(i)) return i;
   for(let i=0;i<prog.pageCount;i++) if(!read.has(i)) return i;
   return null;
+}
+
+
+// 🔒 Quiz gate: the next unread page is the only page batch you can move to.
+// Pages are marked complete only after the Reading Test quiz is passed.
+function firstLockedPageIndex(gid){
+  const prog=gid&&state.chapterProgress&&state.chapterProgress[gid];
+  if(!prog||!prog.pageCount) return null;
+  const read=new Set(prog.readPages||[]);
+  for(let i=0;i<prog.pageCount;i++) if(!read.has(i)) return i;
+  return null;
+}
+
+function pageBatchIsUnlocked(gid,startIdx){
+  const firstLocked=firstLockedPageIndex(gid);
+  if(firstLocked===null) return true;
+  return startIdx<=firstLocked;
 }
 
 function continueNextPage(){
@@ -1510,7 +1538,7 @@ function refreshActiveChapterBanner(){
   const nextIdx=nextUnreadPageIndex();
   el.innerHTML='<b style="color:var(--green)">Active:</b> '+esc(ch.title||'Untitled')+(ch.author?' by '+esc(ch.author):'')+(extra?' — '+esc(extra):'')+' <span style="color:var(--muted)">('+words+' words)</span>'
     +(progress?'<br><span class="tiny" style="color:var(--primary)">'+esc(progress)+'</span>':'')
-    +(nextIdx!==null?'<button type="button" class="green" style="margin-top:10px;margin-bottom:0" onclick="continueNextPage()">▶ Continue — Page '+(nextIdx+1)+' is next</button>':'');
+    +(nextIdx!==null?'<button type="button" class="green" style="margin-top:10px;margin-bottom:0" onclick="continueNextPage()">▶ Continue Training — Page '+(nextIdx+1)+' unlocked</button>':'');
   renderChapterHeatMap();
   renderNotes();
 }
@@ -2420,10 +2448,15 @@ const Quiz={
     save();
     addXp(delta, (mode==='lawn'?'Lawnmower':'Reading')+' Quiz '+acc+'%');
     if(sessionComplete) addXp(100,'Full Training Session Complete — all modes passed');
+    let quizUnlockedNext=null;
+    if(passed && mode==='read'){
+      markChapterProgress();
+      quizUnlockedNext=nextUnreadPageIndex();
+    }
     const mastery=passed?markPageMastery(mode):null;
     if(mastery&&mastery.newlyMastered) addXp(50,'Page '+mastery.page+' Mastered ⭐');
 
-    const wpmNote=passed?('WPM saved: <b>'+recordedWpm+'</b>')
+    const wpmNote=passed?('WPM saved: <b>'+recordedWpm+'</b>. Quiz passed — next pages unlocked.')
       :('You read at '+wpm+' WPM, but missed questions bring your recorded speed down to <b>'+recordedWpm+' WPM</b>. Score 75%+ (3 of 4) to pass and unlock the next mode.');
     container.innerHTML='<h2 style="color:var(--gold);text-align:center;letter-spacing:1px">'+(sessionComplete?'🏆 SESSION COMPLETE':(passed?'MISSION COMPLETE':'MISSION INCOMPLETE'))+'</h2>'
       +(sessionComplete?'<p class="tiny" style="text-align:center;color:var(--green)">Every training mode passed — that\'s full session #'+state.sessionsCompleted+'! +100 bonus XP. The ladder has re-locked for your next climb.</p>':'')
@@ -2437,14 +2470,13 @@ const Quiz={
         +coachNotes.map(n=>'<p class="tiny" style="margin:6px 0">'+n+'</p>').join('')
       +'</div>'
       +'<button class="green" id="qzRetry">Retry This Quiz</button>'
-      +(passed&&nextUnreadPageIndex()!==null?'<button class="green" onclick="continueNextPage()">▶ Next page is loaded — Continue Reading</button>':'')
+      +(passed&&quizUnlockedNext!==null?'<button class="green" onclick="continueNextPage()">▶ Next pages unlocked — Continue Reading</button>':'')
       +'<button onclick="home()">Back to Hub</button>';
     // Auto-advance: the moment a Reading Test is passed, the next unread
     // page(s) silently load into the reader and become the Active
     // Chapter -- one tap on Continue (or Start) and you're reading on.
-    if(passed){
-      const ni=nextUnreadPageIndex();
-      if(ni!==null){ try{ loadSpecificPage('read', String(ni)); }catch(e){} }
+    if(passed && quizUnlockedNext!==null){
+      try{ loadSpecificPage('read', String(quizUnlockedNext)); }catch(e){}
     }
     container.querySelector('#qzRetry').onclick=()=>Quiz.render(container,text,wpm,mode);
     this.aiCoachNotes(container, recordedWpm, acc, mode);
@@ -2730,8 +2762,8 @@ const Reader={
     $(mode==='lawn'?'finishLawnBtn':'finishReadBtn').classList.add('hidden');
     $(mode==='lawn'?'pauseLawnBtn':'pauseReadBtn').classList.add('hidden');
     completeMission('read');
-    markChapterProgress();
     if(mode==='lawn'){
+      markChapterProgress();
       // Lawnmower is a pure eye-training drill now: no quiz, no XP, no
       // recorded WPM. The one real test (quiz, XP, records, mastery)
       // lives at the end of the ladder in the Reading Test.
@@ -4062,7 +4094,7 @@ const Library={
       if(pageCount&&!isDone){ const rs=new Set(readPagesArr); for(let i=0;i<pageCount;i++){ if(!rs.has(i)){ nextPage=i; break; } } }
       const bm=getAutoBookmark(gid);
       const bookmarkPage=(bm&&pageCount&&bm.pageIndex<pageCount)?bm.pageIndex:null;
-      const continuePage=(bookmarkPage!==null)?bookmarkPage:(nextPage!==null?nextPage:0);
+      const continuePage=(nextPage!==null)?nextPage:(bookmarkPage!==null?bookmarkPage:0);
       if(this.filter==='progress' && !(readCount>0 && readCount<pageCount)) return;
       if(this.filter==='done' && !isDone) return;
       if(query){ const hay=(cleanTitle+' '+author+' '+chapters.join(' ')).toLowerCase(); if(!hay.includes(query)) return; }
