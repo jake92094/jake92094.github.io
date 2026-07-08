@@ -309,7 +309,8 @@ label.tiny{display:block;margin:10px 0 0}
   <div class="panel">
     <textarea id="readText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Reader.loadActive('read')">Load Active Chapter</button>
-    <div id="pagePickerWrapRead" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanRead" onchange="setPageSpan(this.value,'read')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
+    <button type="button" onclick="refreshReadingSetup('read')" style="margin-top:0">↻ Refresh Current Page Setup</button>
+    <div id="pagePickerWrapRead" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanRead" onchange="setPageSpan(this.value,'read')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="2">Steady — 2 pages</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
       <label class="tiny">Jump to a starting page:</label>
       <select id="pagePickerRead" onchange="loadSpecificPage('read',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
@@ -341,7 +342,8 @@ label.tiny{display:block;margin:10px 0 0}
   <div class="panel">
     <textarea id="lawnText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Reader.loadActive('lawn')">Load Active Chapter</button>
-    <div id="pagePickerWrapLawn" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanLawn" onchange="setPageSpan(this.value,'lawn')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
+    <button type="button" onclick="refreshReadingSetup('lawn')" style="margin-top:0">↻ Refresh Current Page Setup</button>
+    <div id="pagePickerWrapLawn" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanLawn" onchange="setPageSpan(this.value,'lawn')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="2">Steady — 2 pages</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
       <label class="tiny">Jump to a starting page:</label>
       <select id="pagePickerLawn" onchange="loadSpecificPage('lawn',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
@@ -542,7 +544,8 @@ label.tiny{display:block;margin:10px 0 0}
   <div class="panel">
     <textarea id="rsvpText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Rsvp.loadActive()">Load Active Chapter</button>
-    <div id="pagePickerWrapRsvp" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanRsvp" onchange="setPageSpan(this.value,'rsvp')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
+    <button type="button" onclick="refreshReadingSetup('rsvp')" style="margin-top:0">↻ Refresh Current Page Setup</button>
+    <div id="pagePickerWrapRsvp" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanRsvp" onchange="setPageSpan(this.value,'rsvp')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="2">Steady — 2 pages</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
       <label class="tiny">Jump to a starting page:</label>
       <select id="pagePickerRsvp" onchange="loadSpecificPage('rsvp',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
@@ -1324,12 +1327,23 @@ function renderPagePicker(mode){
   const spanSel=$(mode==='lawn'?'pageSpanLawn':mode==='rsvp'?'pageSpanRsvp':'pageSpanRead');
   if(spanSel) spanSel.value=String(state.pageSpan||1);
   const prog=state.chapterProgress&&state.chapterProgress[gid];
-  sel.innerHTML='<option value="whole">Whole Chapter</option>'
-    +pages.map(p=>{
+
+  // Smart page picker fix:
+  // Do NOT make "Whole Chapter" the default. Changing the 1/2/3 pages
+  // setting should leave the visible starting page alone, not flip the
+  // picker back to Whole Chapter and confuse progress tracking.
+  const oldValue=sel.value;
+  const activePage=(ch&&ch.groupId===gid&&typeof ch.pageIndex==='number')?String(ch.pageIndex):'';
+  const nextPage=firstLockedPageIndex(gid);
+  const preferred=(oldValue&&oldValue!=='whole')?oldValue:(activePage||((nextPage!==null&&nextPage!==undefined)?String(nextPage):String(pages[0].pageIndex)));
+
+  sel.innerHTML=pages.map(p=>{
       const locked=mode==='read' && prog && !pageBatchIsUnlocked(gid,p.pageIndex);
       const mark=locked?' 🔒':(pageIsMastered(prog,p.pageIndex)?' ⭐':(prog&&prog.readPages.includes(p.pageIndex)?' ✓':''));
-      return '<option value="'+p.pageIndex+'"'+(locked?' disabled':'')+'>Page '+(p.pageIndex+1)+mark+'</option>';
-    }).join('');
+      const selected=String(p.pageIndex)===String(preferred)?' selected':'';
+      return '<option value="'+p.pageIndex+'"'+(locked?' disabled':'')+selected+'>Page '+(p.pageIndex+1)+mark+'</option>';
+    }).join('')
+    +'<option value="whole">Whole Chapter</option>';
 }
 
 
@@ -1469,22 +1483,63 @@ function setPageSpan(v, mode){
     const s=$(m==='read'?'pageSpanRead':m==='lawn'?'pageSpanLawn':'pageSpanRsvp');
     if(s) s.value=String(state.pageSpan);
   });
-  // Apply immediately: if a specific page is already picked in this
-  // mode, reload it right away with the new span -- otherwise the
-  // setting silently waited for the NEXT pick and looked broken.
-  if(mode){
-    const sel=$(mode==='lawn'?'pagePickerLawn':mode==='rsvp'?'pagePickerRsvp':'pagePickerRead');
-    if(sel&&sel.value&&sel.value!=='whole'){
-      loadSpecificPage(mode, sel.value);
-    }else{
-      const i=nextUnreadPageIndex();
-      if(i!==null){ loadSpecificPage(mode, String(i)); const s2=$(mode==='lawn'?'pagePickerLawn':mode==='rsvp'?'pagePickerRsvp':'pagePickerRead'); if(s2) s2.value=String(i); }
-    }
-  }
+  // Smart fix: changing 1/2/3 pages is ONLY a setting.
+  // It must NOT jump the reader to Page 2 or secretly reload text.
+  // The selected starting page stays exactly where the user put it.
+  ['read','lawn','rsvp'].forEach(m=>renderPagePicker(m));
+  refreshActiveChapterBanner();
 }
 
 // The app knows which page comes next: first unread page after the one
 // you're on, wrapping back to any earlier unread page if needed.
+
+// Manual refresh button for the reading screens.
+// This fixes the "stuck on whatever I clicked first" problem by reloading
+// the visible page picker + current batch size into the actual reader text.
+function refreshReadingSetup(mode){
+  const sel=$(mode==='lawn'?'pagePickerLawn':mode==='rsvp'?'pagePickerRsvp':'pagePickerRead');
+  const spanSel=$(mode==='lawn'?'pageSpanLawn':mode==='rsvp'?'pageSpanRsvp':'pageSpanRead');
+  if(spanSel) state.pageSpan=Math.max(1,Math.min(5,parseInt(spanSel.value,10)||1));
+
+  // If the picker is showing a page, reload that exact starting page with
+  // the selected 1/2/3-page batch. Do NOT fall back to Whole Chapter unless
+  // the user actually picked Whole Chapter.
+  if(sel && sel.value && sel.value!=='whole'){
+    loadSpecificPage(mode, sel.value);
+    renderPagePicker(mode);
+    refreshActiveChapterBanner();
+    return;
+  }
+
+  if(sel && sel.value==='whole'){
+    if(mode==='rsvp') Rsvp.loadActive(); else Reader.loadActive(mode);
+    renderPagePicker(mode);
+    refreshActiveChapterBanner();
+    return;
+  }
+
+  const ch=state.activeChapter;
+  if(ch && ch.groupId && typeof ch.pageIndex==='number'){
+    loadSpecificPage(mode, String(ch.pageIndex));
+    renderPagePicker(mode);
+    refreshActiveChapterBanner();
+    return;
+  }
+
+  const gid=ch&&ch.groupId;
+  const bm=getAutoBookmark(gid);
+  if(bm){
+    loadSpecificPage(mode, String(bm.pageIndex));
+    renderPagePicker(mode);
+    refreshActiveChapterBanner();
+    return;
+  }
+
+  if(mode==='rsvp') Rsvp.loadActive(); else Reader.loadActive(mode);
+  renderPagePicker(mode);
+  refreshActiveChapterBanner();
+}
+
 function nextUnreadPageIndex(){
   const ch=state.activeChapter;
   const gid=ch&&ch.groupId;
@@ -2476,7 +2531,15 @@ const Quiz={
     // page(s) silently load into the reader and become the Active
     // Chapter -- one tap on Continue (or Start) and you're reading on.
     if(passed && quizUnlockedNext!==null){
-      try{ loadSpecificPage('read', String(quizUnlockedNext)); }catch(e){}
+      // After the quiz is passed, move straight to the next unread page batch.
+      // The next page(s) are loaded first, then the Reading Test screen opens
+      // so the user does not have to hunt for the next page manually.
+      setTimeout(()=>{
+        try{
+          loadSpecificPage('read', String(quizUnlockedNext));
+          openView('read');
+        }catch(e){}
+      },900);
     }
     container.querySelector('#qzRetry').onclick=()=>Quiz.render(container,text,wpm,mode);
     this.aiCoachNotes(container, recordedWpm, acc, mode);
