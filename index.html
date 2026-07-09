@@ -404,7 +404,7 @@ label.tiny{display:block;margin:10px 0 0}
     <textarea id="readText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Reader.loadActive('read')">Load Active Chapter</button>
     <button type="button" onclick="refreshReadingSetup('read')" style="margin-top:0">↻ Refresh Current Page Setup</button>
-    <div id="pagePickerWrapRead" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanRead" onchange="setPageSpan(this.value,'read')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="2">Steady — 2 pages</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
+    <div id="pagePickerWrapRead" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanRead" onchange="setPageSpan(this.value,'read')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="2">Steady — 2 pages</option><option value="3">Normal — 3 pages</option><option value="4">Extended — 4 pages</option><option value="5">Challenge — 5 pages</option></select></label>
       <label class="tiny">Jump to a starting page:</label>
       <select id="pagePickerRead" onchange="loadSpecificPage('read',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
@@ -437,7 +437,7 @@ label.tiny{display:block;margin:10px 0 0}
     <textarea id="lawnText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Reader.loadActive('lawn')">Load Active Chapter</button>
     <button type="button" onclick="refreshReadingSetup('lawn')" style="margin-top:0">↻ Refresh Current Page Setup</button>
-    <div id="pagePickerWrapLawn" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanLawn" onchange="setPageSpan(this.value,'lawn')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="2">Steady — 2 pages</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
+    <div id="pagePickerWrapLawn" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanLawn" onchange="setPageSpan(this.value,'lawn')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="2">Steady — 2 pages</option><option value="3">Normal — 3 pages</option><option value="4">Extended — 4 pages</option><option value="5">Challenge — 5 pages</option></select></label>
       <label class="tiny">Jump to a starting page:</label>
       <select id="pagePickerLawn" onchange="loadSpecificPage('lawn',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
@@ -691,7 +691,7 @@ label.tiny{display:block;margin:10px 0 0}
     <textarea id="rsvpText" placeholder="Paste reading text..."></textarea>
     <button type="button" onclick="Rsvp.loadActive()">Load Active Chapter</button>
     <button type="button" onclick="refreshReadingSetup('rsvp')" style="margin-top:0">↻ Refresh Current Page Setup</button>
-    <div id="pagePickerWrapRsvp" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanRsvp" onchange="setPageSpan(this.value,'rsvp')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="2">Steady — 2 pages</option><option value="3">Normal — 3 pages</option><option value="5">Challenge — 5 pages</option></select></label>
+    <div id="pagePickerWrapRsvp" class="hidden" style="margin-top:8px"><label class="tiny" style="display:block;margin-bottom:4px">Reading Batch Size: <select id="pageSpanRsvp" onchange="setPageSpan(this.value,'rsvp')" style="width:auto;display:inline-block;padding:4px 8px;margin-left:6px"><option value="1">Easy — 1 page</option><option value="2">Steady — 2 pages</option><option value="3">Normal — 3 pages</option><option value="4">Extended — 4 pages</option><option value="5">Challenge — 5 pages</option></select></label>
       <label class="tiny">Jump to a starting page:</label>
       <select id="pagePickerRsvp" onchange="loadSpecificPage('rsvp',this.value)"><option value="whole">Whole Chapter</option></select>
     </div>
@@ -1629,10 +1629,12 @@ function setPageSpan(v, mode){
     const s=$(m==='read'?'pageSpanRead':m==='lawn'?'pageSpanLawn':'pageSpanRsvp');
     if(s) s.value=String(state.pageSpan);
   });
-  // Smart fix: changing 1/2/3 pages is ONLY a setting.
-  // It must NOT jump the reader to Page 2 or secretly reload text.
-  // The selected starting page stays exactly where the user put it.
   ['read','lawn','rsvp'].forEach(m=>renderPagePicker(m));
+  // Changing the batch size now reloads the currently selected starting
+  // page right away, at the new size -- no separate re-tap of the page
+  // dropdown required to actually see the new batch of pages.
+  const sel=$(mode==='lawn'?'pagePickerLawn':mode==='rsvp'?'pagePickerRsvp':'pagePickerRead');
+  if(sel && sel.value) loadSpecificPage(mode, sel.value);
   refreshActiveChapterBanner();
 }
 
@@ -1739,11 +1741,12 @@ function advanceActiveChapterToPage(pageIndex){
   return true;
 }
 
-function continueNextPage(){
+function continueNextPage(mode){
+  mode=mode||'read';
   const i=nextUnreadPageIndex();
   if(i===null){ alert('Every page of this chapter has been read — chapter done! 🎉'); return; }
   advanceActiveChapterToPage(i);
-  openView('read');
+  openView(mode);
 }
 
 function refreshActiveChapterBanner(){
@@ -2690,7 +2693,7 @@ const Quiz={
     addXp(delta, (mode==='lawn'?'Lawnmower':'Reading')+' Quiz '+acc+'%');
     if(sessionComplete) addXp(100,'Full Training Session Complete — all modes passed');
     let quizUnlockedNext=null;
-    if(passed && mode==='read'){
+    if(passed && (mode==='read'||mode==='lawn'||mode==='rsvp')){
       markChapterProgress();
       quizUnlockedNext=nextUnreadPageIndex();
       // Auto-advance immediately -- RSVP, Lawnmower, and Reading all get
@@ -2715,7 +2718,9 @@ const Quiz={
         +coachNotes.map(n=>'<p class="tiny" style="margin:6px 0">'+n+'</p>').join('')
       +'</div>'
       +'<button class="green" id="qzRetry">Retry This Quiz</button>'
-      +(passed&&quizUnlockedNext!==null?'<button class="green" onclick="continueNextPage()">▶ Next pages unlocked — Continue Reading</button>':'')
+      +(passed&&quizUnlockedNext!==null?'<button class="green" onclick="continueNextPage(\''+mode+'\')">▶ Next pages unlocked — Continue Reading</button>':'')
+      +(mode==='rsvp'?'<button onclick="Rsvp.carryToLawn()">Next Drill: Lawnmower (same pages loaded) →</button>':'')
+      +(mode==='lawn'?'<button onclick="Reader.carryToRead()">Take the Reading Test (same pages loaded) →</button>':'')
       +'<button onclick="home()">Back to Hub</button>';
     // Auto-advance: the moment a Reading Test is passed, the next unread
     // page(s) silently load into the reader and become the Active
@@ -2726,8 +2731,8 @@ const Quiz={
       // so the user does not have to hunt for the next page manually.
       setTimeout(()=>{
         try{
-          loadSpecificPage('read', String(quizUnlockedNext));
-          openView('read');
+          loadSpecificPage(mode, String(quizUnlockedNext));
+          openView(mode);
         }catch(e){}
       },900);
     }
@@ -3016,26 +3021,17 @@ const Reader={
     $(mode==='lawn'?'pauseLawnBtn':'pauseReadBtn').classList.add('hidden');
     completeMission('read');
     if(mode==='lawn'){
-      // Quiz-only progress: Lawnmower does NOT mark pages complete.
-      // Lawnmower is a pure eye-training drill now: no quiz, no XP, no
-      // recorded WPM. The one real test (quiz, XP, records, mastery)
-      // lives at the end of the ladder in the Reading Test.
+      // Finishing the drill still unlocks the next rung of the ladder
+      // (Reading Test) immediately, same as before.
       state.modePassed=state.modePassed||{};
       state.modePassed.lawn=true;
       save();
       refreshLocks();
-      const box=$('quizLawn');
-      box.classList.remove('hidden');
-      box.innerHTML='<h2 style="color:var(--green);text-align:center">DRILL COMPLETE 🐍</h2>'
-        +'<div class="branch-card"><div class="grid2">'
-          +'<div class="stat" style="margin:0"><small>DRILL PACE</small><b>'+wpm+' WPM</b></div>'
-          +'<div class="stat" style="margin:0"><small>WORDS</small><b>'+s.total+'</b></div>'
-        +'</div><p class="tiny" style="margin-top:10px">Drills train your eyes — they don\'t record speed or give XP. The Reading Test at the end is where it counts: quiz, XP, records, and mastery stars all live there.</p></div>'
-        +'<button class="green" onclick="Reader.carryToRead()">Take the Reading Test (same pages loaded) →</button>'
-        +'<button onclick="home()">Back to Hub</button>';
-      return;
     }
-    Quiz.render($('quizRead'), s.text, wpm, mode);
+    // Lawnmower and RSVP now feed the same shared Quiz engine as Reading:
+    // pass it and the page(s) get marked complete, mastery stars accrue,
+    // and the next unread page auto-loads.
+    Quiz.render($(mode==='lawn'?'quizLawn':'quizRead'), s.text, wpm, mode);
   }
 };
 
@@ -4013,21 +4009,17 @@ const Rsvp={
     if(this.idx>=this.words.length){
       this.stop();
       completeMission('read');
-      // Quiz-only progress: RSVP does NOT mark pages complete.
-      // RSVP is a pure pace drill now: no quiz, no XP, no recorded WPM.
+      // Finishing the drill still unlocks the next rung of the ladder
+      // (Lawnmower) immediately, same as before.
       state.modePassed=state.modePassed||{};
       state.modePassed.rsvp=true;
       save();
       refreshLocks();
-      const box=$('quizRsvp');
-      box.classList.remove('hidden');
-      box.innerHTML='<h2 style="color:var(--green);text-align:center">DRILL COMPLETE ⚡</h2>'
-        +'<div class="branch-card"><div class="grid2">'
-          +'<div class="stat" style="margin:0"><small>DRILL PACE</small><b>'+this.speed+' WPM</b></div>'
-          +'<div class="stat" style="margin:0"><small>WORDS</small><b>'+this.words.length+'</b></div>'
-        +'</div><p class="tiny" style="margin-top:10px">Drills train your eyes — they don\'t record speed or give XP. The Reading Test is where it counts: quiz, XP, records, and mastery stars.</p></div>'
-        +'<button class="green" onclick="Rsvp.carryToLawn()">Next Drill: Lawnmower (same pages loaded) →</button>'
-        +'<button onclick="home()">Back to Hub</button>';
+      // RSVP now feeds the same shared Quiz engine as Reading and
+      // Lawnmower: pass it and the page(s) you just flashed through get
+      // marked complete, mastery stars accrue, and the next unread page
+      // auto-loads -- exactly like the Reading Test does.
+      Quiz.render($('quizRsvp'), this.text, this.speed, 'rsvp');
       return;
     }
     $('rsvpWord').textContent=this.words[this.idx++];
@@ -4038,6 +4030,7 @@ const Rsvp={
     const text=$('rsvpText').value.trim();
     this.words=normalize(text).split(/\s+/).filter(Boolean);
     if(!this.words.length){ alert('Paste reading text first.'); return; }
+    this.text=text;
     this.speed=+$('rsvpSpeed').value;
     this.idx=0;
     this.paused=false;
