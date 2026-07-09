@@ -1716,10 +1716,33 @@ function pageBatchIsUnlocked(gid,startIdx){
   return startIdx<=firstLocked;
 }
 
+// Advances the Active Chapter itself (not just the hidden bookmark record)
+// to the given page, and syncs that page's text straight into every mode's
+// textarea -- Reading, Lawnmower, AND RSVP. Without this, only the bookmark
+// moved forward when a quiz was passed; the Active Chapter (and therefore
+// RSVP, since it just reads whatever's in rsvpText) stayed stuck on the old
+// page until someone manually hit "Load Active Chapter" or "Refresh".
+function advanceActiveChapterToPage(pageIndex){
+  const ch=state.activeChapter;
+  const gid=ch&&ch.groupId;
+  if(!gid||pageIndex===null||pageIndex===undefined) return false;
+  const entry=(state.library||[]).find(x=>x.groupId===gid&&x.type==='scanned chapter'&&x.pageIndex===pageIndex);
+  if(!entry) return false;
+  state.activeChapter={title:entry.title, author:entry.author||'', chapter:entry.chapter||'', pages:String(pageIndex+1), text:entry.text, groupId:gid, pageIndex:pageIndex, date:Date.now()};
+  ['readText','lawnText','rsvpText'].forEach(id=>{ const el=$(id); if(el) el.value=entry.text; });
+  if(typeof Rsvp!=='undefined') Rsvp.stop();
+  if(typeof Reader!=='undefined'){ Reader.stop('read'); Reader.stop('lawn'); }
+  ['read','lawn','rsvp'].forEach(m=>renderPagePicker(m));
+  saveAutoBookmark(gid,pageIndex);
+  refreshActiveChapterBanner();
+  save();
+  return true;
+}
+
 function continueNextPage(){
   const i=nextUnreadPageIndex();
   if(i===null){ alert('Every page of this chapter has been read — chapter done! 🎉'); return; }
-  loadSpecificPage('read', String(i));
+  advanceActiveChapterToPage(i);
   openView('read');
 }
 
@@ -2251,13 +2274,30 @@ function openView(id){
   if(id==='library') Library.render();
   if(id==='verses') Verses.render();
   if(id==='scan') Scanner.renderBookPicker();
-  if(id==='read') renderPagePicker('read');
-  if(id==='lawn') renderPagePicker('lawn');
-  if(id==='rsvp') renderPagePicker('rsvp');
+  if(id==='read'){ renderPagePicker('read'); syncReaderText('read'); }
+  if(id==='lawn'){ renderPagePicker('lawn'); syncReaderText('lawn'); }
+  if(id==='rsvp'){ renderPagePicker('rsvp'); syncReaderText('rsvp'); }
   if(id==='study' && state.activeChapter && $('studyText') && !$('studyText').value.trim()){
     $('studyText').value=state.activeChapter.text||'';
     if(state.activeChapter.title && !$('studyTitle').value.trim()) $('studyTitle').value=state.activeChapter.title;
   }
+}
+
+// Keeps a mode's textarea lined up with the Active Chapter whenever its
+// screen is opened -- e.g. reopening the app, or switching from Reading
+// straight into RSVP. Only fills it in when it's empty or still showing
+// a stale/different page; never overwrites text you've deliberately
+// pasted in yourself that doesn't belong to the tracked Active Chapter.
+function syncReaderText(mode){
+  const ch=state.activeChapter;
+  if(!ch||!ch.text) return;
+  const id=mode==='lawn'?'lawnText':mode==='rsvp'?'rsvpText':'readText';
+  const el=$(id);
+  if(!el) return;
+  if(!el.value.trim() || (el.dataset.syncedChapter && el.dataset.syncedChapter!==(ch.groupId+':'+ch.pageIndex+':'+ch.date))){
+    el.value=ch.text;
+  }
+  el.dataset.syncedChapter=ch.groupId+':'+ch.pageIndex+':'+ch.date;
 }
 
 /* ============================================================
@@ -2653,6 +2693,10 @@ const Quiz={
     if(passed && mode==='read'){
       markChapterProgress();
       quizUnlockedNext=nextUnreadPageIndex();
+      // Auto-advance immediately -- RSVP, Lawnmower, and Reading all get
+      // the next page's text right now, so opening RSVP right after a
+      // quiz shows the new page instead of the one you just finished.
+      if(quizUnlockedNext!==null) advanceActiveChapterToPage(quizUnlockedNext);
     }
     const mastery=passed?markPageMastery(mode):null;
     if(mastery&&mastery.newlyMastered) addXp(50,'Page '+mastery.page+' Mastered ⭐');
