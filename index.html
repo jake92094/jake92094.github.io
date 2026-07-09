@@ -3025,12 +3025,9 @@ const Reader={
       state.modePassed.lawn=true;
       save();
       refreshLocks();
-      // No quiz here -- Lawnmower stays a pure eye-training drill. But the
-      // page tracker still needs to move: mark the page(s) just drilled as
-      // read and silently load the next unread page right now.
-      markChapterProgress();
-      const next=nextUnreadPageIndex();
-      if(next!==null) advanceActiveChapterToPage(next);
+      // No quiz here -- Lawnmower stays a pure eye-training drill. The page
+      // tracker does NOT move: pages are only marked complete after the
+      // Reading Test quiz is passed, so the active page stays put until then.
       const box=$('quizLawn');
       box.classList.remove('hidden');
       box.innerHTML='<h2 style="color:var(--green);text-align:center">DRILL COMPLETE 🐍</h2>'
@@ -4028,12 +4025,9 @@ const Rsvp={
       state.modePassed.rsvp=true;
       save();
       refreshLocks();
-      // No quiz here -- RSVP stays a pure pace drill. But the page tracker
-      // still needs to move: mark the page(s) just flashed through as read
-      // and silently load the next unread page right now.
-      markChapterProgress();
-      const next=nextUnreadPageIndex();
-      if(next!==null) advanceActiveChapterToPage(next);
+      // No quiz here -- RSVP stays a pure pace drill. The page tracker does
+      // NOT move: pages are only marked complete after the Reading Test
+      // quiz is passed, so the active page stays put until then.
       const box=$('quizRsvp');
       box.classList.remove('hidden');
       box.innerHTML='<h2 style="color:var(--green);text-align:center">DRILL COMPLETE ⚡</h2>'
