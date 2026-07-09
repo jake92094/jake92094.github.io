@@ -2693,7 +2693,7 @@ const Quiz={
     addXp(delta, (mode==='lawn'?'Lawnmower':'Reading')+' Quiz '+acc+'%');
     if(sessionComplete) addXp(100,'Full Training Session Complete — all modes passed');
     let quizUnlockedNext=null;
-    if(passed && (mode==='read'||mode==='lawn'||mode==='rsvp')){
+    if(passed && mode==='read'){
       markChapterProgress();
       quizUnlockedNext=nextUnreadPageIndex();
       // Auto-advance immediately -- RSVP, Lawnmower, and Reading all get
@@ -2719,8 +2719,6 @@ const Quiz={
       +'</div>'
       +'<button class="green" id="qzRetry">Retry This Quiz</button>'
       +(passed&&quizUnlockedNext!==null?'<button class="green" onclick="continueNextPage(\''+mode+'\')">▶ Next pages unlocked — Continue Reading</button>':'')
-      +(mode==='rsvp'?'<button onclick="Rsvp.carryToLawn()">Next Drill: Lawnmower (same pages loaded) →</button>':'')
-      +(mode==='lawn'?'<button onclick="Reader.carryToRead()">Take the Reading Test (same pages loaded) →</button>':'')
       +'<button onclick="home()">Back to Hub</button>';
     // Auto-advance: the moment a Reading Test is passed, the next unread
     // page(s) silently load into the reader and become the Active
@@ -3027,11 +3025,26 @@ const Reader={
       state.modePassed.lawn=true;
       save();
       refreshLocks();
+      // No quiz here -- Lawnmower stays a pure eye-training drill. But the
+      // page tracker still needs to move: mark the page(s) just drilled as
+      // read and silently load the next unread page right now.
+      markChapterProgress();
+      const next=nextUnreadPageIndex();
+      if(next!==null) advanceActiveChapterToPage(next);
+      const box=$('quizLawn');
+      box.classList.remove('hidden');
+      box.innerHTML='<h2 style="color:var(--green);text-align:center">DRILL COMPLETE 🐍</h2>'
+        +'<div class="branch-card"><div class="grid2">'
+          +'<div class="stat" style="margin:0"><small>DRILL PACE</small><b>'+wpm+' WPM</b></div>'
+          +'<div class="stat" style="margin:0"><small>WORDS</small><b>'+s.total+'</b></div>'
+        +'</div><p class="tiny" style="margin-top:10px">Drills train your eyes — no quiz, no XP, no recorded WPM. '
+          +(next!==null?'The next page is already loaded and ready.':'Every page of this chapter is done! 🎉')
+          +'</p></div>'
+        +'<button class="green" onclick="Reader.carryToRead()">Take the Reading Test (same pages loaded) →</button>'
+        +'<button onclick="home()">Back to Hub</button>';
+      return;
     }
-    // Lawnmower and RSVP now feed the same shared Quiz engine as Reading:
-    // pass it and the page(s) get marked complete, mastery stars accrue,
-    // and the next unread page auto-loads.
-    Quiz.render($(mode==='lawn'?'quizLawn':'quizRead'), s.text, wpm, mode);
+    Quiz.render($('quizRead'), s.text, wpm, mode);
   }
 };
 
@@ -4015,11 +4028,23 @@ const Rsvp={
       state.modePassed.rsvp=true;
       save();
       refreshLocks();
-      // RSVP now feeds the same shared Quiz engine as Reading and
-      // Lawnmower: pass it and the page(s) you just flashed through get
-      // marked complete, mastery stars accrue, and the next unread page
-      // auto-loads -- exactly like the Reading Test does.
-      Quiz.render($('quizRsvp'), this.text, this.speed, 'rsvp');
+      // No quiz here -- RSVP stays a pure pace drill. But the page tracker
+      // still needs to move: mark the page(s) just flashed through as read
+      // and silently load the next unread page right now.
+      markChapterProgress();
+      const next=nextUnreadPageIndex();
+      if(next!==null) advanceActiveChapterToPage(next);
+      const box=$('quizRsvp');
+      box.classList.remove('hidden');
+      box.innerHTML='<h2 style="color:var(--green);text-align:center">DRILL COMPLETE ⚡</h2>'
+        +'<div class="branch-card"><div class="grid2">'
+          +'<div class="stat" style="margin:0"><small>DRILL PACE</small><b>'+this.speed+' WPM</b></div>'
+          +'<div class="stat" style="margin:0"><small>WORDS</small><b>'+this.words.length+'</b></div>'
+        +'</div><p class="tiny" style="margin-top:10px">Drills train your eyes — no quiz, no XP, no recorded WPM. '
+          +(next!==null?'The next page is already loaded and ready.':'Every page of this chapter is done! 🎉')
+          +'</p></div>'
+        +'<button class="green" onclick="Rsvp.carryToLawn()">Next Drill: Lawnmower (same pages loaded) →</button>'
+        +'<button onclick="home()">Back to Hub</button>';
       return;
     }
     $('rsvpWord').textContent=this.words[this.idx++];
